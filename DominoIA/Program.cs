@@ -10,6 +10,7 @@ namespace DominoIA
     {
         static int GENETIQUE_ITERATION = 10000;
         static int MAX_ITERATION = 1000000;
+        static int NB_PLAYERS = 3;// 4 ou 2
 
         private static void drawTextProgressBar(int progress, int total)
         {
@@ -78,64 +79,97 @@ namespace DominoIA
                 counter += 1;
                 gameplayed += 1;
                 GameIA game = new GameIA();
-                var players=new Player[4];
+                var players=new Player[NB_PLAYERS];
                 int i = 0;
-                while(players.Any(p=>p==null))
-                {
-                    //if (players.Any(p => p != null && p?.name == "looser"))
-                    //{
-                    //    var ind = rnd.Next(100);
-                    //    var pl = population.players[ind];
-                    //    population.played[ind] += 1;
-                    //    players[i] = pl;
-                    //}
-                    //else if (i == 3 || rnd.NextDouble() >= 0.5)
-                    //{
-                    //    var ind = rnd.Next(10);
-                    //    var pl = population.loosers[ind];
-                    //    population.looserPlayed[ind] += 1;
-                    //    players[i] = pl;
-                    //}
-                    //else
-                    //{
-                    //    var ind = rnd.Next(100);
-                    //    var pl = population.players[ind];
-                    //    population.played[ind] += 1;
-                    //    players[i] = pl;
-                    //}
+                var classementPl = population.players.Zip(population.scores.Zip(population.played, (s, p) => p > 0 ? (double)s / (double)p : 0), (p, s) => new { pl = p, sc = s }).OrderByDescending(cp => cp.sc).Select(p => p.pl).ToArray();
 
-                    if (players.Any(p=>p!=null && p?.name!="looser"))
+                while (players.Any(p=>p==null))
+                {
+                    
+                    if (players.Any(p => p != null && p?.name == "looser"))
+                    {
+                        var ind = rnd.Next(100);
+                        var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
+                        if (plIa != null)
+                        {
+                            ind = Array.IndexOf(classementPl, plIa);
+                            ind = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        }
+                        var pl = classementPl[ind];
+
+                        if (!players.Any(p => p?.id == pl.id))
+                        {
+                            players[i] = pl;
+                            population.played[ind] += 1;
+                            i++;
+                        }
+                    }
+                    else if ((i == NB_PLAYERS-1 && i>1) || rnd.NextDouble() >= 0.5)
                     {
                         var ind = rnd.Next(10);
                         var pl = population.loosers[ind];
                         if (!players.Any(p => p?.id == pl.id))
                         {
                             players[i] = pl;
-                            i++;
-                        }
-                    }
-                    else if(i==3 || rnd.NextDouble()>=0.5)
-                    {
-                        var ind = rnd.Next(100);
-                        var pl = population.players[ind];
-
-                        if (!players.Any(p => p?.id == pl.id))
-                        {
-                            players[i] = pl;
+                            population.looserPlayed[ind] += 1;
                             i++;
                         }
                     }
                     else
                     {
-                        var ind = rnd.Next(10);
-                        var pl = population.loosers[ind];
+                        var ind = rnd.Next(100);
+                        var plIa = players.FirstOrDefault(p => p!=null && p?.name != "looser");
+                        if (plIa != null)
+                        {
+                            ind = Array.IndexOf(classementPl, plIa);
+                            ind = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        }
+                        var pl = classementPl[ind];
+
                         if (!players.Any(p => p?.id == pl.id))
                         {
                             players[i] = pl;
+                            population.played[ind] += 1;
                             i++;
                         }
                     }
+
+                    //if (players.Any(p=>p!=null && p?.name!="looser"))
+                    //{
+                    //    var ind = rnd.Next(10);
+                    //    var pl = population.loosers[ind];
+                    //    if (!players.Any(p => p?.id == pl.id))
+                    //    {
+                    //        players[i] = pl;
+                    //        population.looserPlayed[ind] += 1;
+                    //        i++;
+                    //    }
+                    //}
+                    //else if(i== NB_PLAYERS - 1 || rnd.NextDouble()>=0.5)
+                    //{
+                    //    var ind = rnd.Next(100);
+                    //    var pl = population.players[ind];
+
+                    //    if (!players.Any(p => p?.id == pl.id))
+                    //    {
+                    //        players[i] = pl;
+                    //        population.played[ind] += 1;
+                    //        i++;
+                    //    }
+                    //}
+                    //else
+                    //{
+                    //    var ind = rnd.Next(10);
+                    //    var pl = population.loosers[ind];
+                    //    if (!players.Any(p => p?.id == pl.id))
+                    //    {
+                    //        players[i] = pl;
+                    //        population.looserPlayed[ind] += 1;
+                    //        i++;
+                    //    }
+                    //}
                 }
+
                 game.Initialize(6, players);
                 var winners = game.Run();
                 foreach (var win in winners)

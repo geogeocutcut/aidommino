@@ -14,7 +14,9 @@ namespace DominoIA.Game
         public int generation;
         public GameIA game;
         public List<Domino> Main = new List<Domino>();
-        
+
+        public int nbDominoInitial;
+        public int nbPiocheInitial;
 
         public abstract void Initialize(GameIA gameTmp);
 

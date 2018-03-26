@@ -10,5 +10,6 @@ namespace DominoIA.Game
     {
         public string name;
         public Domino domino;
+        public Player player;
     }
 }

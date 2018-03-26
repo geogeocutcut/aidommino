@@ -6,9 +6,10 @@ namespace DominoIA.Game
 {
     public class GameIA
     {
-        public Player[] players = new Player[4];
+        public Player[] players ;
         public List<Domino> Pioche = new List<Domino>();
         public List<Domino> Dominos = new List<Domino>();
+        public List<Action> actionsHistory = new List<Action>();
 
         public List<int> PlayedDominos = new List<int>();
         public static Random rnd = new Random();
@@ -19,6 +20,8 @@ namespace DominoIA.Game
 
         public void Initialize(int maxValue, Player[] playersTmp)
         {
+            Pioche = new List<Domino>();
+            Dominos = new List<Domino>();
             for (int i = 0; i <= maxValue; i++)
             {
                 for (int j = i; j <= maxValue; j++)
@@ -42,7 +45,7 @@ namespace DominoIA.Game
             int i = 0;
             int index = -1;
             int p = 0;
-            string[] actions = new string[4];
+            string[] actions = new string[players.Length];
             Action action;
             while (true)
             {
@@ -60,11 +63,13 @@ namespace DominoIA.Game
                     index = Array.IndexOf(players, firstAction.player);
                     p = index;
                     action=firstAction.player.StartGame(firstAction.domino);
+                    action.player = firstAction.player;
                 }
                 else
                 {
-                    p = (i + index) % 4;
+                    p = (i + index) % players.Length;
                     action = players[p].NextAction();
+                    action.player = players[p];
                     actions[p] = action.name;
                     if (players[p].Main.Count == 0)
                     {
@@ -78,7 +83,9 @@ namespace DominoIA.Game
                             .First();
                     }
                 }
-                if(action.name=="domino")
+
+                actionsHistory.Add(action);
+                if (action.name=="domino")
                 {
                     Dominos.Remove(action.domino);
                 }

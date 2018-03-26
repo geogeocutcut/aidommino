@@ -20,12 +20,13 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAHardPlayer
+                players[i] = new IAMediumPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,
                     coeff_valeur = rnd.NextDouble() * 10,
                     coeff_div = rnd.NextDouble() * 10,
+                    coeff_bloq = rnd.NextDouble() * 10,
                     indice_mutuabilite = (rnd.NextDouble() - 0.5)
                 };
                 //players[i] = new DummyPlayer
@@ -50,10 +51,10 @@ namespace DominoIA.Game
 
             for (int i = 0; i < topWinners; i++)
             {
-                if(classement.ElementAt(i).pl is IAHardPlayer)
+                if(classement.ElementAt(i).pl is IAPlayer)
                 {
-                    var winner = (IAHardPlayer) classement.ElementAt(i).pl;
-                    var player = (IAHardPlayer) classement.ElementAt(i + (100 - topWinners)).pl;
+                    var winner = (IAPlayer) classement.ElementAt(i).pl;
+                    var player = (IAPlayer) classement.ElementAt(i + (100 - topWinners)).pl;
                     var mutabilite = winner.indice_mutuabilite;
                     player.coeff_valeur = mutation(winner.coeff_valeur, mutabilite);
                     player.coeff_double = mutation(winner.coeff_double, mutabilite);

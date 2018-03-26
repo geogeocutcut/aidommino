@@ -5,3 +5,10 @@ c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug
 c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.csproj.CoreCompileInputs.cache
 c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.exe
 c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.pdb
+H:\Perso\DominoIA\DominoIA\bin\Debug\DominoIA.exe.config
+H:\Perso\DominoIA\DominoIA\bin\Debug\DominoIA.exe
+H:\Perso\DominoIA\DominoIA\bin\Debug\DominoIA.pdb
+H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.csproj.CoreCompileInputs.cache
+H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.exe
+H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.pdb
+H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.csprojResolveAssemblyReference.cache

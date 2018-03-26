@@ -6,15 +6,8 @@ using System.Threading.Tasks;
 
 namespace DominoIA.Game
 {
-    public class IAMediumPlayer : Player
+    public class IAMediumPlayer : IAPlayer
     {
-
-        public double coeff_double { get; set; }
-        public double coeff_div { get; set; }
-        public double coeff_valeur { get; set; }
-        public double coeff_bloq { get; set; }
-        public double coeff_incertitude { get; set; }
-        public double indice_mutuabilite { get; set; }
         
 
         public IAMediumPlayer()
@@ -32,10 +25,11 @@ namespace DominoIA.Game
         }
         public override void Initialize (GameIA gameTmp)
         {
+            Main = new List<Domino>();
             game = gameTmp;
             
-
-            while (Main.Count<6)
+            nbDominoInitial = game.players.Length > 2 ? 6 : 7;
+            while (Main.Count < nbDominoInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];

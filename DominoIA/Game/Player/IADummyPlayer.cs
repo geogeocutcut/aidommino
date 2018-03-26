@@ -6,14 +6,15 @@ using System.Threading.Tasks;
 
 namespace DominoIA.Game
 {
-    public class IADummyPlayer:Player
+    public class IADummyPlayer:IAPlayer
     {
         
         public override void Initialize (GameIA gameTmp)
         {
-
+            Main = new List<Domino>();
             game = gameTmp;
-            while (Main.Count<6)
+            nbDominoInitial = game.players.Length > 2 ? 6 : 7;
+            while (Main.Count< nbDominoInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
