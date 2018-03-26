@@ -1,0 +1,7 @@
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\bin\Debug\DominoIA.exe.config
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\bin\Debug\DominoIA.exe
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\bin\Debug\DominoIA.pdb
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.csprojResolveAssemblyReference.cache
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.csproj.CoreCompileInputs.cache
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.exe
+c:\Users\geffb\documents\visual studio 2017\Projects\DominoIA\DominoIA\obj\Debug\DominoIA.pdb
