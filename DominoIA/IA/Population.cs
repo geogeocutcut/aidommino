@@ -20,13 +20,14 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAMediumPlayer
+                players[i] = new IAHardPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,
                     coeff_valeur = rnd.NextDouble() * 10,
                     coeff_div = rnd.NextDouble() * 10,
                     coeff_bloq = rnd.NextDouble() * 10,
+                    coeff_incertitude = rnd.NextDouble() * 10,
                     indice_mutuabilite = (rnd.NextDouble() - 0.5)
                 };
                 //players[i] = new DummyPlayer

@@ -6,18 +6,17 @@ using System.Threading.Tasks;
 
 namespace DominoIA.Game
 {
-    public class IAHardPlayer : IAPlayer
+    public class IAHardPlayerBis : IAPlayer
     {
-
         
         public List<DominoProbabilite> PiocheProbalibites = new List<DominoProbabilite>();
         public Dictionary<Player,List<DominoProbabilite>> EnemyPossibleMains = new Dictionary<Player, List<DominoProbabilite>>();
 
-        public IAHardPlayer()
+        public IAHardPlayerBis()
         {
         }
 
-        public IAHardPlayer(IAHardPlayer pl)
+        public IAHardPlayerBis(IAHardPlayer pl)
         {
             name = pl.name;
             coeff_double = pl.coeff_double;
@@ -33,6 +32,7 @@ namespace DominoIA.Game
             game = gameTmp;
             nbDominoInitial = game.players.Length>2?6:7;
             nbPiocheInitial = game.Dominos.Count - game.players.Length* nbDominoInitial;
+            nbPioche = 0;
             EnemyPossibleMains = new Dictionary<Player, List<DominoProbabilite>>();
             while (Main.Count< nbDominoInitial)
             {
@@ -65,7 +65,7 @@ namespace DominoIA.Game
         {
             
             var possibleNum = new[] { game.PlayedDominos.First(), game.PlayedDominos.Last() };
-            var nbDominoNonJoue = game.Dominos.Where(d=>!Main.Contains(d)).Count();
+            var nbDominoNonConnu = game.Dominos.Where(d=>!Main.Contains(d)).Count();
             var possibleDominos = game.Dominos.Where(d => !Main.Contains(d)).Where(d => possibleNum.Contains(d.Values[0]) || possibleNum.Contains(d.Values[1]));
             var nbPossibleDominos = possibleDominos.Count();
             var nbDominoMainEnemy = enemy.Main.Count();
@@ -74,43 +74,28 @@ namespace DominoIA.Game
             switch (action.name)
             {
                 case "domino":
-                    var proba = EnemyPossibleMains[enemy].First(p => p.domino == action.domino).proba;
-                    foreach (var prob in EnemyPossibleMains[enemy])
+                    foreach (var prob in EnemyPossibleMains.SelectMany(p => p.Value,(k,p)=>new { enemy = k.Key, prob = p} ))
                     {
-                        if (prob.domino == action.domino)
+                        if (prob.prob.domino == action.domino)
                         {
-                            prob.proba = 0;
-
-                            // Mise à jour des proba des autres joueurs 
-                            foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy).SelectMany(p => p.Value).Where(p => p.domino == prob.domino))
-                            {
-                                prob2.proba = 0;
-                            }
-
-                            //Mise à jour des proba de la pioche
-                            var prob3 = PiocheProbalibites.First(p => p.domino == prob.domino);
-                            prob3.proba = 0;
+                            prob.prob.proba = prob.enemy == enemy ? 1 : 0 ;
                         }
                         else
                         {
-                            var proba2 = prob.proba * (double)nbDominoMainEnemy/(double)(nbDominoMainEnemy+1 - proba);
-
-                            // Mise à jour des proba des autres joueurs 
-                            foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy).SelectMany(p => p.Value).Where(p => p.domino == prob.domino))
-                            {
-                                prob2.proba = prob2.proba * (double)(1 - proba2) / (double)(1 - prob.proba);
-                            }
-
-                            //Mise à jour des proba de la pioche
-                            var prob3 = PiocheProbalibites.First(p => p.domino == prob.domino);
-                            prob3.proba = prob3.proba * (double)(1 - proba2) / (double)(1 - prob.proba);
-                            prob.proba = proba2;
+                            prob.prob.proba = prob.prob.proba >0 ?enemy.Main.Count/nbDominoNonConnu:0;
+                        }
+                    }
+                    foreach(var prob in PiocheProbalibites)
+                    {
+                        if(prob.domino == action.domino)
+                        {
+                            prob.proba = prob.proba > 0 ? game.Pioche.Count / nbDominoNonConnu : 0;
                         }
                     }
                     break;
-                case "pioche":
 
-                    // mise àjour proba pour les dominos non présent dans la main du player
+                case "pioche":
+                    // mise à jour proba pour les dominos non présent dans la main du player
                     foreach (var prob in EnemyPossibleMains[enemy].Where(p => possibleDominos.Contains(p.domino)))
                     {
 
@@ -153,9 +138,8 @@ namespace DominoIA.Game
                     foreach (var prob in EnemyPossibleMains[enemy])
                     {
                         var piocheProb = PiocheProbalibites.First(p => p.domino == prob.domino);
-                        var piocheProba = piocheProb.proba / (game.Pioche.Count + 1);
-                        piocheProb.proba = piocheProba * game.Pioche.Count;
-                        prob.proba += piocheProba;
+                        prob.coeff_pioche += (double)1 / (double)(nbPiocheInitial-nbPioche);
+                        prob.PiocheProb = piocheProb;
                     }
                     
                     break;
@@ -168,6 +152,11 @@ namespace DominoIA.Game
                         foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy)
                             .SelectMany(p => p.Value)
                             .Where(p => p.domino == prob.domino))
+                        {
+                            prob2.proba = prob2.proba * 1 / (1 - prob.proba);
+                        }
+
+                        foreach (var prob2 in PiocheProbalibites.Where(p => p.domino == prob.domino))
                         {
                             prob2.proba = prob2.proba * 1 / (1 - prob.proba);
                         }
@@ -186,18 +175,22 @@ namespace DominoIA.Game
                         {
                             prob2.proba = prob2.proba * (double)(1 - probatmp) / (double)(1 - prob.proba);
                         }
+
+                        foreach (var prob2 in PiocheProbalibites.Where(p => p.domino == prob.domino))
+                        {
+                            prob2.proba = prob2.proba * (double)(1 - probatmp) / (double)(1 - prob.proba);
+                        }
+
                         prob.proba = probatmp;
                     }
                     break;
             }
 
             var totalProbbyDomino = EnemyPossibleMains.SelectMany(p => p.Value).Concat(PiocheProbalibites).GroupBy(p=>p.domino).Select(gr=>new { domino = gr.Key, s = gr.Sum(p => p.proba) }).Where(p=>game.Dominos.Contains(p.domino));
-            
-            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.proba)/gr.Key.Main.Count });
-            
-            var scorePioche = game.Pioche.Count>0?PiocheProbalibites.Sum(p => p.proba) / game.Pioche.Count:1;
 
-            var Deduct = EnemyPossibleMains.SelectMany(p => p.Value, (k,p) => new { enemy = k.Key, proba = p}).OrderByDescending(p=>p.proba.proba);
+            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.valeur) / (gr.Key.Main.Count) });
+
+            var scorePioche = PiocheProbalibites.Sum(p => p.proba) / (nbPiocheInitial - nbPioche);
         }
 
         public override Action NextAction()
@@ -251,6 +244,7 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
+                nbPioche += 1;
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
@@ -260,7 +254,6 @@ namespace DominoIA.Game
                 
                 return action;
             }
-
             action = new Action { name = "passe" };
             return action;
         }
@@ -280,6 +273,7 @@ namespace DominoIA.Game
                     else
                     {
                         prob.proba = prob.proba*enemy.Key.Main.Count / (enemy.Key.Main.Count - proba.proba);
+                        prob.coeff_pioche *= (nbPiocheInitial-nbPioche+1) / nbPiocheInitial - nbPioche;
                     }
                 }
 
@@ -293,15 +287,15 @@ namespace DominoIA.Game
                 }
                 else
                 {
-                    prob.proba = prob.proba * (double)(game.Pioche.Count) / (double)(game.Pioche.Count + 1 - probatmp.proba);
+                    prob.proba = prob.proba * (double)(nbPiocheInitial - nbPioche) / (double)(nbPiocheInitial - nbPioche + 1 - probatmp.proba);
                 }
             }
 
             var totalProbbyDomino = EnemyPossibleMains.SelectMany(p => p.Value).Concat(PiocheProbalibites).GroupBy(p => p.domino).Select(gr => new { domino = gr.Key, s = gr.Sum(p => p.proba) }).Where(p => game.Dominos.Contains(p.domino));
 
-            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.proba) / gr.Key.Main.Count });
+            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.valeur) / (gr.Key.Main.Count) });
 
-            var scorePioche = game.Pioche.Count > 0 ? PiocheProbalibites.Sum(p => p.proba) / game.Pioche.Count : 1;
+            var scorePioche = nbPiocheInitial - nbPioche > 0 ? PiocheProbalibites.Sum(p => p.proba) / (nbPiocheInitial - nbPioche) : 1;
         }
 
         public void CalculScore(IEnumerable<Domino> possibleDominos,int leftNum,int rightNum)
@@ -315,7 +309,7 @@ namespace DominoIA.Game
                     var val = d.Values[1 - i];
                     if(possibleVal.Contains(d.Values[i]))
                     {
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(d,val) +  GetScoreBlocage(d,val, possibleVal);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(d,val) + coeff_bloq * GetScoreBlocage(d,val, possibleVal);
                     }
                     else
                     {
@@ -327,11 +321,10 @@ namespace DominoIA.Game
 
         private double GetScoreBlocage(Domino d, int val, int[] possibleVal)
         {
-            var dval = val;
+            var dval = d.Values.Count(dv => dv != val) >0 ? d.Values.First(dv => dv != val) : val;
             var dval2 = possibleVal.Count(dv=>dv!=dval)>0? possibleVal.First(dv => dv != dval):val;
-            var blocage_incert = EnemyPossibleMains.SelectMany((k) => k.Value,(k,p)=>new { pl = k.Key, pb = p }).Where(p => !p.pb.domino.Values.Contains(dval) && !p.pb.domino.Values.Contains(dval2));
-            var blocage = blocage_incert.GroupBy(p => p.pl).Select(gr => new { pl = gr.Key, bloc = gr.Sum(x => x.pb.proba) / gr.Key.Main.Count });
-            var result = coeff_bloq * blocage.Count(x=>x.bloc>0.8) + coeff_incertitude* blocage_incert.Sum(x=>x.pb.proba)/ blocage.Sum(x=>x.pl.Main.Count);
+            var blocage = EnemyPossibleMains.SelectMany((k) => k.Value).Where(p => p.domino.Values.Contains(dval) || p.domino.Values.Contains(dval2));
+            var result = blocage.Count() > 0 ? blocage.Sum(p=>p.proba)/ blocage.Count() : 0 ;
             return result; 
         }
 

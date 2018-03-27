@@ -9,6 +9,8 @@ namespace DominoIA.Game
     public abstract class Player
     {
 
+        public int nbPioche;
+
         public string id=Guid.NewGuid().ToString();
         public string name;
         public int generation;

@@ -9,8 +9,8 @@ namespace DominoIA
     class Program
     {
         static int GENETIQUE_ITERATION = 10000;
-        static int MAX_ITERATION = 1000000;
-        static int NB_PLAYERS = 3;// 4 ou 2
+        static int MAX_ITERATION = 10000000;
+        static int NB_PLAYERS = 4;// 4 ou 2
 
         private static void drawTextProgressBar(int progress, int total)
         {
@@ -85,7 +85,7 @@ namespace DominoIA
 
                 while (players.Any(p=>p==null))
                 {
-                    
+
                     if (players.Any(p => p != null && p?.name == "looser"))
                     {
                         var ind = rnd.Next(100);
@@ -100,11 +100,11 @@ namespace DominoIA
                         if (!players.Any(p => p?.id == pl.id))
                         {
                             players[i] = pl;
-                            population.played[ind] += 1;
+                            population.played[Array.IndexOf(population.players,pl)] += 1;
                             i++;
                         }
                     }
-                    else if ((i == NB_PLAYERS-1 && i>1) || rnd.NextDouble() >= 0.5)
+                    else if ((i == NB_PLAYERS - 1 && i > 1) || rnd.NextDouble() >= 0.5)
                     {
                         var ind = rnd.Next(10);
                         var pl = population.loosers[ind];
@@ -118,7 +118,7 @@ namespace DominoIA
                     else
                     {
                         var ind = rnd.Next(100);
-                        var plIa = players.FirstOrDefault(p => p!=null && p?.name != "looser");
+                        var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
                         if (plIa != null)
                         {
                             ind = Array.IndexOf(classementPl, plIa);
@@ -129,12 +129,12 @@ namespace DominoIA
                         if (!players.Any(p => p?.id == pl.id))
                         {
                             players[i] = pl;
-                            population.played[ind] += 1;
+                            population.played[Array.IndexOf(population.players, pl)] += 1;
                             i++;
                         }
                     }
 
-                    //if (players.Any(p=>p!=null && p?.name!="looser"))
+                    //if (players.Any(p => p != null && p?.name != "looser"))
                     //{
                     //    var ind = rnd.Next(10);
                     //    var pl = population.loosers[ind];
@@ -145,7 +145,7 @@ namespace DominoIA
                     //        i++;
                     //    }
                     //}
-                    //else if(i== NB_PLAYERS - 1 || rnd.NextDouble()>=0.5)
+                    //else if (i == NB_PLAYERS - 1 || rnd.NextDouble() >= 0.5)
                     //{
                     //    var ind = rnd.Next(100);
                     //    var pl = population.players[ind];

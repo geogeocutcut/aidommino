@@ -14,6 +14,8 @@ namespace DominoIA.Game
             Main = new List<Domino>();
             game = gameTmp;
             nbDominoInitial = game.players.Length > 2 ? 6 : 7;
+
+            nbPioche = 0;
             while (Main.Count< nbDominoInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
@@ -76,6 +78,7 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
+                nbPioche += 1;
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
