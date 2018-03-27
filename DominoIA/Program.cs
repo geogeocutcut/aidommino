@@ -9,7 +9,7 @@ namespace DominoIA
     class Program
     {
         static int GENETIQUE_ITERATION = 10000;
-        static int MAX_ITERATION = 10000000;
+        static int MAX_ITERATION = 1000000;
         static int NB_PLAYERS = 4;// 4 ou 2
 
         private static void drawTextProgressBar(int progress, int total)
@@ -104,7 +104,7 @@ namespace DominoIA
                             i++;
                         }
                     }
-                    else if ((i == NB_PLAYERS - 1 && i > 1) || rnd.NextDouble() >= 0.5)
+                    else if ((i == NB_PLAYERS - 1  || rnd.NextDouble() >= 0.5 ) && i > 1)
                     {
                         var ind = rnd.Next(10);
                         var pl = population.loosers[ind];
