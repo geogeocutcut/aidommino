@@ -12,17 +12,15 @@ namespace DominoIA.Game
         public string id=Guid.NewGuid().ToString();
         public string name;
         public int generation;
-        public GameIA game;
-        public List<Domino> Main = new List<Domino>();
 
         public int nbDominoInitial;
         public int nbPiocheInitial;
 
-        public abstract void Initialize(GameIA gameTmp);
+        public abstract void Initialize(GameIA game);
 
-        public abstract void UpdateState(Player enemy, Action action);
+        public abstract void UpdateState(GameIA game,Player enemy, Action action);
 
-        public abstract Action NextAction();
-        public abstract Action StartGame(Domino domino);
+        public abstract Action NextAction(GameIA game);
+        public abstract Action StartGame(GameIA game,Domino domino);
     }
 }

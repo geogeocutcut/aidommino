@@ -11,15 +11,15 @@ namespace DominoIA.Game
         
         public override void Initialize (GameIA gameTmp)
         {
-            Main = new List<Domino>();
-            game = gameTmp;
-            nbDominoInitial = game.players.Length > 2 ? 6 : 7;
-            while (Main.Count< nbDominoInitial)
+            var game = gameTmp;
+            var main = gameTmp.mains[this.id];
+            nbDominoInitial = game.players.Count > 2 ? 6 : 7;
+            while (main.Count< game.nbDominoMainInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
-                Main.Add(domino);
+                main.Add(domino);
             }
         }
         

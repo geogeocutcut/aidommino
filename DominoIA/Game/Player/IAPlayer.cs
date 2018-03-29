@@ -16,11 +16,11 @@ namespace DominoIA.Game
         public double indice_mutuabilite { get; set; }
 
 
-        public abstract override void Initialize(GameIA gameTmp);
+        public abstract override void Initialize(GameIA game);
 
-        public abstract override void UpdateState(Player enemy, Action action);
+        public abstract override void UpdateState(GameIA game,Player enemy, Action action);
 
-        public abstract override Action NextAction();
-        public abstract override Action StartGame(Domino domino);
+        public abstract override Action NextAction(GameIA game);
+        public abstract override Action StartGame(GameIA game,Domino domino);
     }
 }

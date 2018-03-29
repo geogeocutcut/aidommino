@@ -6,14 +6,21 @@ namespace DominoIA.Game
 {
     public class GameIA
     {
-        public Player[] players ;
+        public Dictionary<Domino, Dictionary<string, DominoProbabilite>> dominoProbabilites = new Dictionary<Domino, Dictionary<string, DominoProbabilite>>();
+        public Dictionary<string, Dictionary<Domino, DominoProbabilite>> playerProbabilites = new Dictionary<string, Dictionary<Domino, DominoProbabilite>>();
+        public Dictionary<string, Player> players = new Dictionary<string, Player>();
+        public Dictionary<string, HashSet<Domino>> mains = new Dictionary<string, HashSet<Domino>>();
+        
         public List<Domino> Pioche = new List<Domino>();
         public List<Domino> Dominos = new List<Domino>();
         public List<Action> actionsHistory = new List<Action>();
 
         public List<int> PlayedDominos = new List<int>();
         public static Random rnd = new Random();
-        public GameIA()
+
+        public int nbDominoMainInitial;
+
+        public GameIA() 
         {
             
         }
@@ -32,11 +39,14 @@ namespace DominoIA.Game
                 }
             }
 
-            players = playersTmp;
+            foreach(var pl in playersTmp)
+            {
+                players.Add(pl.id,pl);
+            }
 
             foreach(var p in players)
             {
-                p.Initialize(this);
+                p.Value.Initialize(this);
             }
         }
 
@@ -45,20 +55,20 @@ namespace DominoIA.Game
             int i = 0;
             int index = -1;
             int p = 0;
-            string[] actions = new string[players.Length];
+            string[] actions = new string[players.Count];
             Action action;
             while (true)
             {
                 if (i == 0)
                 {
-                    var firstAction = players.Where(p1=> p1.Main.Any(d => d.IsDouble())).Select(pl => new { player = pl, domino = pl.Main.Where(d => d.IsDouble())
+                    var firstAction = mains.Where(p1=> p1.Value.Any(d => d.IsDouble())).Select(pl => new { player = players[pl.Key], domino = pl.Value.Where(d => d.IsDouble())
                         .OrderByDescending(d => d.GetValue())
                         .FirstOrDefault() })
                         .OrderByDescending(a => a.domino?.GetValue())
                         .FirstOrDefault();
                     if (firstAction == null)
                     {
-                        firstAction = players.Select(pl => new { player = pl, domino = pl.Main.OrderByDescending(d => d.GetValue()).FirstOrDefault() }).OrderByDescending(a => a.domino.GetValue()).FirstOrDefault();
+                        firstAction = mains.Select(pl => new { player = players[pl.Key], domino = pl.Value.OrderByDescending(d => d.GetValue()).FirstOrDefault() }).OrderByDescending(a => a.domino.GetValue()).FirstOrDefault();
                     }
                     index = Array.IndexOf(players, firstAction.player);
                     p = index;
@@ -67,9 +77,9 @@ namespace DominoIA.Game
                 }
                 else
                 {
-                    p = (i + index) % players.Length;
-                    action = players[p].NextAction();
-                    action.player = players[p];
+                    p = (i + index) % players.Count;
+                    action = players.ElementAt(p).Value.NextAction(this);
+                    action.player = players.ElementAt(p).Value;
                     actions[p] = action.name;
                     if (players[p].Main.Count == 0)
                     {

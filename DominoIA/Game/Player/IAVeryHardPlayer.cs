@@ -6,19 +6,18 @@ using System.Threading.Tasks;
 
 namespace DominoIA.Game
 {
-    public class IAHardPlayer : IAPlayer
+    public class IAVeryHardPlayer : IAPlayer
     {
 
         
-
         public List<DominoProbabilite> PiocheProbalibites = new List<DominoProbabilite>();
         public Dictionary<Player,List<DominoProbabilite>> EnemyPossibleMains = new Dictionary<Player, List<DominoProbabilite>>();
 
-        public IAHardPlayer()
+        public IAVeryHardPlayer()
         {
         }
 
-        public IAHardPlayer(IAHardPlayer pl)
+        public IAVeryHardPlayer(IAVeryHardPlayer pl)
         {
             name = pl.name;
             coeff_double = pl.coeff_double;
