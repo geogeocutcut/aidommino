@@ -46,6 +46,7 @@
     <Compile Include="Game\Domino.cs" />
     <Compile Include="Game\GameIA.cs" />
     <Compile Include="Game\Player\DominoProbabilite.cs" />
+    <Compile Include="Game\Player\IAVeryHardPlayer.cs" />
     <Compile Include="Game\Player\IAMediumPlayer.cs" />
     <Compile Include="Game\Player\IAPlayer.cs" />
     <Compile Include="Game\Player\Player.cs" />
