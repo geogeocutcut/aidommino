@@ -17,8 +17,9 @@ namespace DominoIA.Game
 
         public List<int> PlayedDominos = new List<int>();
         public static Random rnd = new Random();
-
+        
         public int nbDominoMainInitial;
+        public int nbDominoPiocheInitial;
 
         public GameIA() 
         {
@@ -38,10 +39,13 @@ namespace DominoIA.Game
                     Dominos.Add(d);
                 }
             }
+            nbDominoMainInitial = this.players.Count > 2 ? 6 : 7;
+            nbDominoPiocheInitial = 28 - nbDominoMainInitial;
 
-            foreach(var pl in playersTmp)
+            foreach (var pl in playersTmp)
             {
                 players.Add(pl.id,pl);
+                mains[pl.id] = new HashSet<Domino>();
             }
 
             foreach(var p in players)
@@ -57,6 +61,7 @@ namespace DominoIA.Game
             int p = 0;
             string[] actions = new string[players.Count];
             Action action;
+            var playersTmp = players.Values.ToArray();
             while (true)
             {
                 if (i == 0)
@@ -70,9 +75,9 @@ namespace DominoIA.Game
                     {
                         firstAction = mains.Select(pl => new { player = players[pl.Key], domino = pl.Value.OrderByDescending(d => d.GetValue()).FirstOrDefault() }).OrderByDescending(a => a.domino.GetValue()).FirstOrDefault();
                     }
-                    index = Array.IndexOf(players, firstAction.player);
+                    index = Array.IndexOf(playersTmp, firstAction.player);
                     p = index;
-                    action=firstAction.player.StartGame(firstAction.domino);
+                    action=firstAction.player.StartGame(this,firstAction.domino);
                     action.player = firstAction.player;
                 }
                 else
@@ -81,16 +86,14 @@ namespace DominoIA.Game
                     action = players.ElementAt(p).Value.NextAction(this);
                     action.player = players.ElementAt(p).Value;
                     actions[p] = action.name;
-                    if (players[p].Main.Count == 0)
+                    if (mains[playersTmp[p].id].Count == 0)
                     {
-                        return new Player[] { players[p] };
+                        return new Player[] { playersTmp[p] };
                     }
                     if (!actions.Any(a => a != "passe"))
                     {
-                        return players
-                            .GroupBy(x => x.Main.Sum(d => d.GetValue()))
-                            .OrderBy(x => x.Key)
-                            .First();
+                        var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) }).GroupBy(v=>v.valeur);
+                        return result.First().Select(v=>v.pl);
                     }
                 }
 
@@ -99,11 +102,11 @@ namespace DominoIA.Game
                 {
                     Dominos.Remove(action.domino);
                 }
-                for (int p2 = 0; p2 < players.Length; p2++)
+                for(int p2=0;p<playersTmp.Length;p++)
                 {
                     if (p != p2)
                     {
-                        players[p2].UpdateState(players[p], action);
+                        playersTmp[p2].UpdateState(this,playersTmp[p], action);
                     }
                 }
 

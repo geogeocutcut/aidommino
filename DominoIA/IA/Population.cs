@@ -20,7 +20,7 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAHardPlayer
+                players[i] = new IAMediumPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,

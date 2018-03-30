@@ -23,23 +23,21 @@ namespace DominoIA.Game
             coeff_incertitude = pl.coeff_incertitude;
             indice_mutuabilite = pl.indice_mutuabilite;
         }
-        public override void Initialize (GameIA gameTmp)
+        public override void Initialize (GameIA game)
         {
-            Main = new List<Domino>();
-            game = gameTmp;
 
-            nbPioche =0;
-            nbDominoInitial = game.players.Length > 2 ? 6 : 7;
-            while (Main.Count < nbDominoInitial)
+            var main = game.mains[this.id];
+
+            while (main.Count < game.nbDominoMainInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
-                Main.Add(domino);
+                main.Add(domino);
             }
         }
         
-        public override void UpdateState(Player enemy,Action action)
+        public override void UpdateState(GameIA game,Player enemy,Action action)
         {
             switch(action.name)
             {
@@ -52,23 +50,23 @@ namespace DominoIA.Game
             }
         }
 
-        public override Action NextAction()
+        public override Action NextAction(GameIA game)
         {
+            var main = game.mains[this.id];
             // Evaluation des dominos dans la main
             var leftNum = game.PlayedDominos.First();
             var rightNum = game.PlayedDominos.Last();
-            var possibleDominos = Main.Where(d => d.Values.Any(i => i== leftNum || i == rightNum));
+            var possibleDominos = main.Where(d => d.Values.Any(i => i== leftNum || i == rightNum));
 
-            // score = coeff_double*score_double + coeff_div*score_div  + coeff_valeur * score_valeur + coeff_bloq * score_bloq
             // Recupération
             Domino playDomino;
             if (possibleDominos.Any())
             {
                 // scoring IA
-                CalculScore(possibleDominos, leftNum,rightNum);
+                CalculScore(main,possibleDominos, leftNum,rightNum);
                 playDomino = possibleDominos.OrderByDescending(d => d.scores.Max()).First();
 
-                Main.Remove(playDomino);
+                main.Remove(playDomino);
 
 
                 if (playDomino.scores[0] > playDomino.scores[1])
@@ -101,17 +99,16 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
-                nbPioche += 1;
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
-                Main.Add(domino);
+                main.Add(domino);
                 return new Action { name = "pioche" };
             }
 
             return new Action { name = "passe" };
         }
-        public void CalculScore(IEnumerable<Domino> possibleDominos,int leftNum,int rightNum)
+        public void CalculScore(IEnumerable<Domino> main,IEnumerable<Domino> possibleDominos,int leftNum,int rightNum)
         {
             var possibleVal = new[] { leftNum, rightNum };
             foreach(Domino d in possibleDominos)
@@ -122,7 +119,7 @@ namespace DominoIA.Game
                     var val = d.Values[1 - i];
                     if(possibleVal.Contains(d.Values[i]))
                     {
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(d,val);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(main,d, val);
                     }
                     else
                     {
@@ -133,16 +130,17 @@ namespace DominoIA.Game
         }
         
 
-        public double GetDiversiteMain(Domino d, int val)
+        public double GetDiversiteMain(IEnumerable<Domino> main,Domino d, int val)
         {
-            var result = Main.Count(t => t != d && t.Values.Contains(val));
+            var result = main.Count(t => t != d && t.Values.Contains(val));
             return result;
         }
 
-        public override Action StartGame(Domino domino)
+        public override Action StartGame(GameIA game,Domino domino)
         {
+            var main = game.mains[this.id];
             game.PlayedDominos.AddRange(domino.Values);
-            Main.Remove(domino);
+            main.Remove(domino);
             return new Action { name = "domino", domino = domino };
 
         }

@@ -9,11 +9,9 @@ namespace DominoIA.Game
     public class IADummyPlayer:IAPlayer
     {
         
-        public override void Initialize (GameIA gameTmp)
+        public override void Initialize (GameIA game)
         {
-            var game = gameTmp;
-            var main = gameTmp.mains[this.id];
-            nbDominoInitial = game.players.Count > 2 ? 6 : 7;
+            var main = game.mains[this.id];
             while (main.Count< game.nbDominoMainInitial)
             {
                 var index = GameIA.rnd.Next(game.Pioche.Count);
@@ -25,13 +23,14 @@ namespace DominoIA.Game
         
         
 
-        public override Action NextAction()
+        public override Action NextAction(GameIA game)
         {
             // Evaluation des dominos dans la main
             var leftNum = game.PlayedDominos.First();
             var rightNum = game.PlayedDominos.Last();
-            var possibleLeftDominos = Main.Where(d => d.Values.Any(i => i== leftNum));
-            var possibleRightDominos = Main.Where(d => d.Values.Any(i => i == rightNum));
+            var main = game.mains[this.id];
+            var possibleLeftDominos = main.Where(d => d.Values.Any(i => i== leftNum));
+            var possibleRightDominos = main.Where(d => d.Values.Any(i => i == rightNum));
 
             // score = coeff_double*score_double + coeff_div*score_div  + coeff_valeur * score_valeur + coeff_bloq * score_bloq
             // Recupération
@@ -41,7 +40,7 @@ namespace DominoIA.Game
                 // basic IA
                 playDomino = possibleLeftDominos.First();
 
-                Main.Remove(playDomino);
+                main.Remove(playDomino);
                 if(playDomino.Values[0]==leftNum)
                 {
                     game.PlayedDominos.Insert(0, playDomino.Values[0]);
@@ -60,7 +59,7 @@ namespace DominoIA.Game
                 // basic IA
                 playDomino = possibleRightDominos.First();
 
-                Main.Remove(playDomino);
+                main.Remove(playDomino);
                 if (playDomino.Values[0] == rightNum)
                 {
                     game.PlayedDominos.Add(playDomino.Values[0]);
@@ -76,25 +75,25 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
-                nbPioche += 1;
                 var index = GameIA.rnd.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
-                Main.Add(domino);
+                main.Add(domino);
                 return new Action { name = "pioche" };
             }
 
             return new Action { name = "passe" };
         }
-        public override Action StartGame(Domino domino)
+        public override Action StartGame(GameIA game,Domino domino)
         {
+            var main = game.mains[this.id];
             game.PlayedDominos.AddRange(domino.Values);
-            Main.Remove(domino);
+            main.Remove(domino);
             return new Action { name = "domino", domino = domino };
 
         }
 
-        public override void UpdateState(Player enemy, Action action)
+        public override void UpdateState(GameIA game, Player enemy, Action action)
         {
         }
     }
