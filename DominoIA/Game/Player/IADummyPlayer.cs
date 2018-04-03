@@ -8,21 +8,6 @@ namespace DominoIA.Game
 {
     public class IADummyPlayer:IAPlayer
     {
-        
-        public override void Initialize (GameIA game)
-        {
-            var main = game.mains[this.id];
-            while (main.Count< game.nbDominoMainInitial)
-            {
-                var index = GameIA.rnd.Next(game.Pioche.Count);
-                var domino = game.Pioche[index];
-                game.Pioche.RemoveAt(index);
-                main.Add(domino);
-            }
-        }
-        
-        
-
         public override Action NextAction(GameIA game)
         {
             // Evaluation des dominos dans la main
@@ -75,26 +60,14 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
-                var index = GameIA.rnd.Next(game.Pioche.Count);
+                var index = StaticRandom.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
                 main.Add(domino);
-                return new Action { name = "pioche" };
+                return new Action { domino = domino, name = "pioche" };
             }
 
             return new Action { name = "passe" };
-        }
-        public override Action StartGame(GameIA game,Domino domino)
-        {
-            var main = game.mains[this.id];
-            game.PlayedDominos.AddRange(domino.Values);
-            main.Remove(domino);
-            return new Action { name = "domino", domino = domino };
-
-        }
-
-        public override void UpdateState(GameIA game, Player enemy, Action action)
-        {
         }
     }
 }

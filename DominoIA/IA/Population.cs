@@ -20,7 +20,7 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAMediumPlayer
+                players[i] = new IAHardPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,
@@ -30,10 +30,6 @@ namespace DominoIA.Game
                     coeff_incertitude = rnd.NextDouble() * 10,
                     indice_mutuabilite = (rnd.NextDouble() - 0.5)
                 };
-                //players[i] = new DummyPlayer
-                //{
-                //    name = "player " + i
-                //};
             }
 
             for (int i = 0; i < loosers.Count(); i++)

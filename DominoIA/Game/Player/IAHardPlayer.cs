@@ -1,350 +1,244 @@
-﻿//using System.Collections.Generic;
-//using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 
-//namespace DominoIA.Game
-//{
-//    public class IAHardPlayer : IAPlayer
-//    {
+namespace DominoIA.Game
+{
+    public class IAHardPlayer : IAPlayer
+    {
 
+        public IAHardPlayer()
+        {
+        }
+
+        public IAHardPlayer(IAHardPlayer pl)
+        {
+            name = pl.name;
+            coeff_double = pl.coeff_double;
+            coeff_div = pl.coeff_div;
+            coeff_valeur = pl.coeff_valeur;
+            coeff_bloq = pl.coeff_bloq;
+            coeff_incertitude = pl.coeff_incertitude;
+            indice_mutuabilite = pl.indice_mutuabilite;
+        }
+
+        public override void FinalizeInitialisation(GameIA game)
+        {
+            var main = game.mains[this.id];
+
+            game.playerProbabilites[this] = new Dictionary<Player, Dictionary<Domino, DominoProbabilite>>();
+            game.dominoProbabilites[this] = new Dictionary<Domino, Dictionary<Player, DominoProbabilite>>();
+            game.piocheProbabilites[this] = new Dictionary<Domino, DominoProbabilite>();
+
+            var enemyPossibleMains = game.playerProbabilites[this];
+            var dominoPossibleMains = game.dominoProbabilites[this];
+
+            var possibleDominos = game.Dominos.Where(d => !main.Contains(d));
+            foreach (var d in possibleDominos)
+            {
+                dominoPossibleMains[d] = new Dictionary < Player, DominoProbabilite > ();
+            }
+
+
+            foreach (var e in game.players.Where(p=>p.Key!=this.id))
+            {
+                enemyPossibleMains[e.Value] = new Dictionary<Domino, DominoProbabilite>();
+                foreach (var d in possibleDominos)
+                {
+                    var prob = new DominoProbabilite(d, 1);
+                    enemyPossibleMains[e.Value][d]= prob;
+                    dominoPossibleMains[d][e.Value] = prob;
+                }
+            }
+
+            var piocheProbalibites = game.piocheProbabilites[this];
+            foreach (var d in possibleDominos)
+            {
+                piocheProbalibites[d]=new DominoProbabilite(d, 1);
+            }
+        }
+
+        public override void UpdateState(GameIA game,Player enemy, Action action)
+        {
+            var dominoMainPossible = game.dominoProbabilites[this];
+            var enemyMainPossible = game.playerProbabilites[this];
+
+            var main = game.mains[this.id];
+            var possibleNum = new[] { game.PlayedDominos.First(), game.PlayedDominos.Last() };
+
+            var possibleDominos = game.Dominos.Where(d => !main.Contains(d)).Where(d => possibleNum.Contains(d.Values[0]) || possibleNum.Contains(d.Values[1]));
+
+            switch (action.name)
+            {
+                case "domino":
+                    foreach (var d in dominoMainPossible[action.domino])
+                    {
+                        d.Value.proba = 0;
+                    }
+                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+                    break;
+                case "pioche":
+                    break;
+                case "passe":
+                    foreach (var d in possibleDominos)
+                    {
+                        enemyMainPossible[enemy][d].proba = 0;
+                    }
+                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+                    break;
+            }
+        }
+
+        private void UpdateProbabilite(GameIA game, Dictionary<Domino, Dictionary<Player, DominoProbabilite>> dominoMainPossible, Dictionary<Player, Dictionary<Domino, DominoProbabilite>> enemyMainPossible)
+        {
+            bool updateProb = true;
+            while (updateProb)
+            {
+                updateProb = false;
+                foreach (var p in enemyMainPossible)
+                {
+                    if (p.Value.Sum(p2 => p2.Value.proba) <= game.mains[p.Key.id].Count)
+                    {
+                        foreach (var prob in p.Value)
+                        {
+                            if (prob.Value.proba > 0)
+                            {
+                                foreach (var prob2 in dominoMainPossible[prob.Key].Where(x => x.Key != p.Key))
+                                {
+                                    if (prob2.Value.proba > 0)
+                                    {
+                                        prob2.Value.proba = 0;
+                                        updateProb = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public override Action NextAction(GameIA game)
+        {
+            var main = game.mains[this.id];
+
+            // Evaluation des dominos dans la main
+            var leftNum = game.PlayedDominos.First();
+            var rightNum = game.PlayedDominos.Last();
+            var possibleDominos = main.Where(d => d.Values.Any(i => i == leftNum || i == rightNum));
+            
+            // Recupération 
+            Action action;
+            Domino playDomino;
+            if (possibleDominos.Any())
+            {
+                // scoring IA
+                CalculScore(game,possibleDominos, leftNum, rightNum);
+                playDomino = possibleDominos.OrderByDescending(d => d.scores.Max()).First();
+
+                main.Remove(playDomino);
+
+
+                if (playDomino.scores[0] > playDomino.scores[1])
+                {
+                    if (playDomino.Values[0] == leftNum)
+                    {
+                        game.PlayedDominos.Insert(0, playDomino.Values[0]);
+                        game.PlayedDominos.Insert(0, playDomino.Values[1]);
+                    }
+                    else
+                    {
+                        game.PlayedDominos.Add(playDomino.Values[0]);
+                        game.PlayedDominos.Add(playDomino.Values[1]);
+                    }
+                }
+                else
+                {
+                    if (playDomino.Values[1] == leftNum)
+                    {
+                        game.PlayedDominos.Insert(0, playDomino.Values[1]);
+                        game.PlayedDominos.Insert(0, playDomino.Values[0]);
+                    }
+                    else
+                    {
+                        game.PlayedDominos.Add(playDomino.Values[1]);
+                        game.PlayedDominos.Add(playDomino.Values[0]);
+                    }
+                }
+                action = new Action { name = "domino", domino = playDomino };
+                return action;
+            }
+            if (game.Pioche.Any())
+            {
+                var index = StaticRandom.Next(game.Pioche.Count);
+                var domino = game.Pioche[index];
+                game.Pioche.RemoveAt(index);
+                main.Add(domino);
+                UpdateProbabilite(game,domino);
+                action = new Action {domino=domino, name = "pioche" };
+
+                return action;
+            }
+
+            action = new Action { name = "passe" };
+            return action;
+        }
+
+        private void UpdateProbabilite(GameIA game,Domino domino)
+        {
+
+            var dominoMainPossible = game.dominoProbabilites[this];
+            var enemyMainPossible = game.playerProbabilites[this];
+            foreach (var p in dominoMainPossible[domino].Values)
+            {
+                p.proba = 0;
+            }
+
+            UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+        }
+
+        public void CalculScore(GameIA game, IEnumerable<Domino> possibleDominos, int leftNum, int rightNum)
+        {
+            var main = game.mains[this.id];
+            var possibleVal = new[] { leftNum, rightNum };
+            foreach (Domino d in possibleDominos)
+            {
+                var scoreDouble = d.IsDouble() ? 1 : 0;
+                for (int i = 0; i < 2; i++)
+                {
+                    var val = d.Values[1 - i];
+                    if (possibleVal.Contains(d.Values[i]))
+                    {
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(main,d, val) + GetScoreBlocage(game,d, val, possibleVal);
+                    }
+                    else
+                    {
+                        d.scores[i] = 0;
+                    }
+                }
+            }
+        }
         
-
-//        public List<DominoProbabilite> PiocheProbalibites = new List<DominoProbabilite>();
-//        public Dictionary<Player,List<DominoProbabilite>> EnemyPossibleMains = new Dictionary<Player, List<DominoProbabilite>>();
-
-//        public IAHardPlayer()
-//        {
-//        }
-
-//        public IAHardPlayer(IAHardPlayer pl)
-//        {
-//            name = pl.name;
-//            coeff_double = pl.coeff_double;
-//            coeff_div = pl.coeff_div;
-//            coeff_valeur = pl.coeff_valeur;
-//            coeff_bloq = pl.coeff_bloq;
-//            coeff_incertitude = pl.coeff_incertitude;
-//            indice_mutuabilite = pl.indice_mutuabilite;
-//        }
-//        public override void Initialize (GameIA gameTmp)
-//        {
-//            Main = new List<Domino>();
-//            game = gameTmp;
-//            nbDominoInitial = game.players.Length>2?6:7;
-//            nbPiocheInitial = game.Dominos.Count - game.players.Length* nbDominoInitial;
-//            EnemyPossibleMains = new Dictionary<Player, List<DominoProbabilite>>();
-//            while (Main.Count< nbDominoInitial)
-//            {
-//                var index = GameIA.rnd.Next(game.Pioche.Count);
-//                var domino = game.Pioche[index];
-//                game.Pioche.RemoveAt(index);
-//                Main.Add(domino);
-//            }
-//            var possibleDominos = game.Dominos.Where(d => !Main.Contains(d));
-//            foreach (var e in game.players)
-//            {
-//                if (e != this)
-//                {
-//                    EnemyPossibleMains[e] = new List<DominoProbabilite>();
-//                    foreach (var d in possibleDominos)
-//                    {
-//                        EnemyPossibleMains[e].Add(new DominoProbabilite(d, (double)nbDominoInitial / (double)possibleDominos.Count()));
-//                    }
-//                }
-//            }
-
-//            PiocheProbalibites = new List<DominoProbabilite>();
-//            foreach (var d in possibleDominos)
-//            {
-//                PiocheProbalibites.Add(new DominoProbabilite(d, (double)nbPiocheInitial / (double)possibleDominos.Count()));
-//            }
-//        }
-        
-//        public override void UpdateState(Player enemy,Action action)
-//        {
+        private double GetScoreBlocage(GameIA game,Domino d, int val, int[] possibleVal)
+        {
+            var dval = val;
+            var dval2 = possibleVal.Count(dv => dv != dval) > 0 ? possibleVal.First(dv => dv != dval) : val;
+            var enemiesPossibleMain = game.playerProbabilites[this]
+                .Select(x => new {
+                    pl = x.Key,
+                    nbDominoPossibleMain = x.Value.Where(v => !v.Key.Values.Contains(dval) && !v.Key.Values.Contains(dval2)).Sum(v=>v.Value.proba),
+                    nbDominoTotalMain = x.Value.Sum(v => v.Value.proba) });
+            var nbDominoBloques = enemiesPossibleMain.Sum(p => p.nbDominoPossibleMain);
+            var nbDominoPossibles = enemiesPossibleMain.Sum(p => p.nbDominoTotalMain);
+            var blocage = coeff_bloq * enemiesPossibleMain.Where(x => x.nbDominoPossibleMain == x.nbDominoTotalMain).Sum(x => (double)1 / (double)game.mains[x.pl.id].Count);
             
-//            var possibleNum = new[] { game.PlayedDominos.First(), game.PlayedDominos.Last() };
-//            var nbDominoNonJoue = game.Dominos.Where(d=>!Main.Contains(d)).Count();
-//            var possibleDominos = game.Dominos.Where(d => !Main.Contains(d)).Where(d => possibleNum.Contains(d.Values[0]) || possibleNum.Contains(d.Values[1]));
-//            var nbPossibleDominos = possibleDominos.Count();
-//            var nbDominoMainEnemy = enemy.Main.Count();
-//            var probSum = 0.0;
+            var blocage_incert = coeff_incertitude *nbDominoBloques / nbDominoPossibles;
+            return blocage+ blocage_incert;
+        }
 
-//            switch (action.name)
-//            {
-//                case "domino":
-//                    var proba = EnemyPossibleMains[enemy].First(p => p.domino == action.domino).proba;
-//                    foreach (var prob in EnemyPossibleMains[enemy])
-//                    {
-//                        if (prob.domino == action.domino)
-//                        {
-//                            prob.proba = 0;
-
-//                            // Mise à jour des proba des autres joueurs 
-//                            foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy).SelectMany(p => p.Value).Where(p => p.domino == prob.domino))
-//                            {
-//                                prob2.proba = 0;
-//                            }
-
-//                            //Mise à jour des proba de la pioche
-//                            var prob3 = PiocheProbalibites.First(p => p.domino == prob.domino);
-//                            prob3.proba = 0;
-//                        }
-//                        else
-//                        {
-//                            var proba2 = prob.proba * (double)nbDominoMainEnemy/(double)(nbDominoMainEnemy+1 - proba);
-
-//                            // Mise à jour des proba des autres joueurs 
-//                            foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy).SelectMany(p => p.Value).Where(p => p.domino == prob.domino))
-//                            {
-//                                prob2.proba = prob2.proba * (double)(1 - proba2) / (double)(1 - prob.proba);
-//                            }
-
-//                            //Mise à jour des proba de la pioche
-//                            var prob3 = PiocheProbalibites.First(p => p.domino == prob.domino);
-//                            prob3.proba = prob3.proba * (double)(1 - proba2) / (double)(1 - prob.proba);
-//                            prob.proba = proba2;
-//                        }
-//                    }
-//                    break;
-//                case "pioche":
-
-//                    // mise àjour proba pour les dominos non présent dans la main du player
-//                    foreach (var prob in EnemyPossibleMains[enemy].Where(p => possibleDominos.Contains(p.domino)))
-//                    {
-
-//                        foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy)
-//                            .SelectMany(p => p.Value)
-//                            .Where(p => p.domino==prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * 1 / (1 - prob.proba);
-//                        }
-
-//                        foreach (var prob2 in PiocheProbalibites.Where(p => p.domino==prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * 1 / (1 - prob.proba);
-//                        }
-//                        probSum += prob.proba;
-//                        prob.proba = 0;
-//                    }
-
-//                    // mise à jour des prob pour les dominos présent dans la main du player (avant pioche)
-//                    foreach (var prob in EnemyPossibleMains[enemy].Where(p => !possibleDominos.Contains(p.domino)))
-//                    {
-//                        var probatmp = prob.proba * (double)(enemy.Main.Count-1) / (double)(enemy.Main.Count-1 - probSum);
-
-//                        foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy)
-//                            .SelectMany(p => p.Value)
-//                            .Where(p => p.domino == prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * (double)(1 - probatmp) / (double)(1 - prob.proba);
-//                        }
-
-//                        foreach (var prob2 in PiocheProbalibites.Where(p => p.domino == prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * (double)(1 - probatmp) / (double)(1 - prob.proba);
-//                        }
-//                        prob.proba = probatmp;
-//                    }
-
-
-//                    // Mise à jour suite à la pioche
-//                    foreach (var prob in EnemyPossibleMains[enemy])
-//                    {
-//                        var piocheProb = PiocheProbalibites.First(p => p.domino == prob.domino);
-//                        var piocheProba = piocheProb.proba / (game.Pioche.Count + 1);
-//                        piocheProb.proba = piocheProba * game.Pioche.Count;
-//                        prob.proba += piocheProba;
-//                    }
-                    
-//                    break;
-//                case "passe":
-//                    // mise àjour proba pour les dominos non présent dans la main du player
-                    
-//                    foreach (var prob in EnemyPossibleMains[enemy].Where(p => possibleDominos.Contains(p.domino)))
-//                    {
-
-//                        foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy)
-//                            .SelectMany(p => p.Value)
-//                            .Where(p => p.domino == prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * 1 / (1 - prob.proba);
-//                        }
-//                        probSum += prob.proba;
-//                        prob.proba = 0;
-//                    }
-
-//                    // mise à jour des prob pour les dominos présent dans la main du player
-//                    foreach (var prob in EnemyPossibleMains[enemy].Where(p => !possibleDominos.Contains(p.domino)))
-//                    {
-//                        var probatmp = prob.proba * (double)enemy.Main.Count / (double)(enemy.Main.Count - probSum);
-
-//                        foreach (var prob2 in EnemyPossibleMains.Where(k => k.Key != enemy)
-//                            .SelectMany(p => p.Value)
-//                            .Where(p => p.domino == prob.domino))
-//                        {
-//                            prob2.proba = prob2.proba * (double)(1 - probatmp) / (double)(1 - prob.proba);
-//                        }
-//                        prob.proba = probatmp;
-//                    }
-//                    break;
-//            }
-
-//            var totalProbbyDomino = EnemyPossibleMains.SelectMany(p => p.Value).Concat(PiocheProbalibites).GroupBy(p=>p.domino).Select(gr=>new { domino = gr.Key, s = gr.Sum(p => p.proba) }).Where(p=>game.Dominos.Contains(p.domino));
-            
-//            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.proba)/gr.Key.Main.Count });
-            
-//            var scorePioche = game.Pioche.Count>0?PiocheProbalibites.Sum(p => p.proba) / game.Pioche.Count:1;
-
-//            var Deduct = EnemyPossibleMains.SelectMany(p => p.Value, (k,p) => new { enemy = k.Key, proba = p}).OrderByDescending(p=>p.proba.proba);
-//        }
-
-//        public override Action NextAction()
-//        {
-//            // Evaluation des dominos dans la main
-//            var leftNum = game.PlayedDominos.First();
-//            var rightNum = game.PlayedDominos.Last();
-//            var possibleDominos = Main.Where(d => d.Values.Any(i => i== leftNum || i == rightNum));
-
-//            // score = coeff_double*score_double + coeff_div*score_div  + coeff_valeur * score_valeur + coeff_bloq * score_bloq
-//            // Recupération
-//            Action action;
-//            Domino playDomino;
-//            if (possibleDominos.Any())
-//            {
-//                // scoring IA
-//                CalculScore(possibleDominos, leftNum,rightNum);
-//                playDomino = possibleDominos.OrderByDescending(d => d.scores.Max()).First();
-
-//                Main.Remove(playDomino);
-
-
-//                if (playDomino.scores[0] > playDomino.scores[1])
-//                {
-//                    if (playDomino.Values[0] == leftNum)
-//                    {
-//                        game.PlayedDominos.Insert(0, playDomino.Values[0]);
-//                        game.PlayedDominos.Insert(0, playDomino.Values[1]);
-//                    }
-//                    else
-//                    {
-//                        game.PlayedDominos.Add(playDomino.Values[0]);
-//                        game.PlayedDominos.Add(playDomino.Values[1]);
-//                    }
-//                }
-//                else
-//                {
-//                    if (playDomino.Values[1] == leftNum)
-//                    {
-//                        game.PlayedDominos.Insert(0, playDomino.Values[1]);
-//                        game.PlayedDominos.Insert(0, playDomino.Values[0]);
-//                    }
-//                    else
-//                    {
-//                        game.PlayedDominos.Add(playDomino.Values[1]);
-//                        game.PlayedDominos.Add(playDomino.Values[0]);
-//                    }
-//                }
-//                action = new Action { name = "domino", domino = playDomino };
-//                return action;
-//            }
-//            if(game.Pioche.Any())
-//            {
-//                var index = GameIA.rnd.Next(game.Pioche.Count);
-//                var domino = game.Pioche[index];
-//                game.Pioche.RemoveAt(index);
-//                Main.Add(domino);
-//                UpdateProbabilite(domino);
-//                action = new Action { name = "pioche" };
-                
-//                return action;
-//            }
-
-//            action = new Action { name = "passe" };
-//            return action;
-//        }
-
-//        private void UpdateProbabilite(Domino domino)
-//        {
-//            for(int i=0;i< EnemyPossibleMains.Count; i++)
-//            {
-//                var enemy = EnemyPossibleMains.ElementAt(i);
-//                var proba= enemy.Value.First(p => p.domino == domino);
-//                foreach(var prob in enemy.Value)
-//                {
-//                    if(prob.domino==domino)
-//                    {
-//                        prob.proba = 0;
-//                    }
-//                    else
-//                    {
-//                        prob.proba = prob.proba*enemy.Key.Main.Count / (enemy.Key.Main.Count - proba.proba);
-//                    }
-//                }
-
-//            }
-//            var probatmp = PiocheProbalibites.First(p => p.domino == domino);
-//            foreach (var prob in PiocheProbalibites)
-//            {
-//                if (prob.domino == domino)
-//                {
-//                    prob.proba = 0;
-//                }
-//                else
-//                {
-//                    prob.proba = prob.proba * (double)(game.Pioche.Count) / (double)(game.Pioche.Count + 1 - probatmp.proba);
-//                }
-//            }
-
-//            var totalProbbyDomino = EnemyPossibleMains.SelectMany(p => p.Value).Concat(PiocheProbalibites).GroupBy(p => p.domino).Select(gr => new { domino = gr.Key, s = gr.Sum(p => p.proba) }).Where(p => game.Dominos.Contains(p.domino));
-
-//            var totalProbbyPlayer = EnemyPossibleMains.Select(gr => new { player = gr.Key, s = gr.Value.Sum(p => p.proba) / gr.Key.Main.Count });
-
-//            var scorePioche = game.Pioche.Count > 0 ? PiocheProbalibites.Sum(p => p.proba) / game.Pioche.Count : 1;
-//        }
-
-//        public void CalculScore(IEnumerable<Domino> possibleDominos,int leftNum,int rightNum)
-//        {
-//            var possibleVal = new[] { leftNum, rightNum };
-//            foreach(Domino d in possibleDominos)
-//            {
-//                var scoreDouble = d.IsDouble() ? 1 : 0;
-//                for(int i =0;i<2;i++)
-//                {
-//                    var val = d.Values[1 - i];
-//                    if(possibleVal.Contains(d.Values[i]))
-//                    {
-//                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(d,val) +  GetScoreBlocage(d,val, possibleVal);
-//                    }
-//                    else
-//                    {
-//                        d.scores[i] = 0;
-//                    }
-//                }
-//            }
-//        }
-
-//        private double GetScoreBlocage(Domino d, int val, int[] possibleVal)
-//        {
-//            var dval = val;
-//            var dval2 = possibleVal.Count(dv=>dv!=dval)>0? possibleVal.First(dv => dv != dval):val;
-//            var blocage_incert = EnemyPossibleMains.SelectMany((k) => k.Value,(k,p)=>new { pl = k.Key, pb = p }).Where(p => !p.pb.domino.Values.Contains(dval) && !p.pb.domino.Values.Contains(dval2));
-//            var blocage = blocage_incert.GroupBy(p => p.pl).Select(gr => new { pl = gr.Key, bloc = gr.Sum(x => x.pb.proba) / gr.Key.Main.Count });
-//            var result = coeff_bloq * blocage.Count(x=>x.bloc>0.8) + coeff_incertitude* blocage_incert.Sum(x=>x.pb.proba)/ blocage.Sum(x=>x.pl.Main.Count);
-//            return result; 
-//        }
-
-//        public double GetDiversiteMain(Domino d, int val)
-//        {
-//            var result = Main.Count(t => t != d && t.Values.Contains(val));
-//            return result;
-//        }
-
-//        public override Action StartGame(Domino domino)
-//        {
-//            game.PlayedDominos.AddRange(domino.Values);
-//            Main.Remove(domino);
-//            return new Action { name = "domino", domino = domino };
-
-//        }
-//    }
-//}
+        public double GetDiversiteMain(IEnumerable<Domino> main,Domino d, int val)
+        {
+            var result = main.Count(t => t != d && t.Values.Contains(val));
+            return result;
+        }
+    }
+}

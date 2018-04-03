@@ -13,11 +13,42 @@ namespace DominoIA.Game
         public string name;
         public int generation;
 
-        public abstract void Initialize(GameIA game);
+        public virtual void Initialize(GameIA game)
+        {
+            var main = game.mains[this.id];
 
-        public abstract void UpdateState(GameIA game,Player enemy, Action action);
+            while (main.Count < game.nbDominoMainInitial)
+            {
+                var index = StaticRandom.Next(game.Pioche.Count);
+                var domino = game.Pioche[index];
+                game.Pioche.RemoveAt(index);
+                main.Add(domino);
+            }
+
+            FinalizeInitialisation(game);
+        }
+
+        public virtual void FinalizeInitialisation(GameIA game)
+        {
+
+        }
+
+        public virtual void UpdateState(GameIA game, Player enemy, Action action)
+        {
+
+        }
+        
 
         public abstract Action NextAction(GameIA game);
-        public abstract Action StartGame(GameIA game,Domino domino);
+
+
+        public virtual Action StartGame(GameIA game, Domino domino)
+        {
+            var main = game.mains[this.id];
+            game.PlayedDominos.AddRange(domino.Values);
+            main.Remove(domino);
+            return new Action { name = "domino", domino = domino };
+
+        }
     }
 }

@@ -1,22 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace DominoIA.Game
 {
+    public static class StaticRandom
+    {
+        static int seed = Environment.TickCount;
+
+        static readonly ThreadLocal<Random> random =
+            new ThreadLocal<Random>(() => new Random(Interlocked.Increment(ref seed)));
+
+        public static int Next()
+        {
+            return random.Value.Next();
+        }
+        public static int Next(int maxvalue)
+        {
+            return random.Value.Next(maxvalue);
+        }
+
+
+        public static int Next(int minvalue,int maxvalue)
+        {
+            return random.Value.Next(minvalue,maxvalue);
+        }
+
+        public static double NextDouble()
+        {
+            return random.Value.NextDouble();
+        }
+    }
+
     public class GameIA
     {
-        public Dictionary<Domino, Dictionary<string, DominoProbabilite>> dominoProbabilites = new Dictionary<Domino, Dictionary<string, DominoProbabilite>>();
-        public Dictionary<string, Dictionary<Domino, DominoProbabilite>> playerProbabilites = new Dictionary<string, Dictionary<Domino, DominoProbabilite>>();
+
+        
+        public Dictionary<Player,Dictionary<Domino, Dictionary<Player, DominoProbabilite>>> dominoProbabilites = new Dictionary<Player, Dictionary<Domino, Dictionary<Player, DominoProbabilite>>>();
+        public Dictionary<Player, Dictionary<Player, Dictionary<Domino, DominoProbabilite>>> playerProbabilites = new Dictionary<Player, Dictionary<Player, Dictionary<Domino, DominoProbabilite>>>();
+        public Dictionary<Player, Dictionary<Domino, DominoProbabilite>> piocheProbabilites = new Dictionary<Player, Dictionary<Domino, DominoProbabilite>>();
+
         public Dictionary<string, Player> players = new Dictionary<string, Player>();
         public Dictionary<string, HashSet<Domino>> mains = new Dictionary<string, HashSet<Domino>>();
-        
+
+        public Dictionary<string, int> playersPioche = new Dictionary<string, int>();
+
         public List<Domino> Pioche = new List<Domino>();
         public List<Domino> Dominos = new List<Domino>();
         public List<Action> actionsHistory = new List<Action>();
 
         public List<int> PlayedDominos = new List<int>();
-        public static Random rnd = new Random();
         
         public int nbDominoMainInitial;
         public int nbDominoPiocheInitial;
@@ -39,13 +73,14 @@ namespace DominoIA.Game
                     Dominos.Add(d);
                 }
             }
-            nbDominoMainInitial = this.players.Count > 2 ? 6 : 7;
-            nbDominoPiocheInitial = 28 - nbDominoMainInitial;
+            nbDominoMainInitial = playersTmp.Length > 2 ? 6 : 7;
+            nbDominoPiocheInitial = 28%nbDominoMainInitial;
 
             foreach (var pl in playersTmp)
             {
                 players.Add(pl.id,pl);
                 mains[pl.id] = new HashSet<Domino>();
+                playersPioche[pl.id] = 0;
             }
 
             foreach(var p in players)
@@ -92,17 +127,23 @@ namespace DominoIA.Game
                     }
                     if (!actions.Any(a => a != "passe"))
                     {
-                        var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) }).GroupBy(v=>v.valeur);
+                        var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) })
+                            .GroupBy(v=>v.valeur)
+                            .OrderBy(v=>v.Key);
                         return result.First().Select(v=>v.pl);
                     }
                 }
 
                 actionsHistory.Add(action);
+                if(action.name=="pioche")
+                {
+                    playersPioche[action.player.id] += 1;
+                }
                 if (action.name=="domino")
                 {
                     Dominos.Remove(action.domino);
                 }
-                for(int p2=0;p<playersTmp.Length;p++)
+                for(int p2=0;p2<playersTmp.Length;p2++)
                 {
                     if (p != p2)
                     {

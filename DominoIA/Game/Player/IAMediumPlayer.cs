@@ -23,32 +23,7 @@ namespace DominoIA.Game
             coeff_incertitude = pl.coeff_incertitude;
             indice_mutuabilite = pl.indice_mutuabilite;
         }
-        public override void Initialize (GameIA game)
-        {
-
-            var main = game.mains[this.id];
-
-            while (main.Count < game.nbDominoMainInitial)
-            {
-                var index = GameIA.rnd.Next(game.Pioche.Count);
-                var domino = game.Pioche[index];
-                game.Pioche.RemoveAt(index);
-                main.Add(domino);
-            }
-        }
         
-        public override void UpdateState(GameIA game,Player enemy,Action action)
-        {
-            switch(action.name)
-            {
-                case "domino":
-                    break;
-                case "pioche":
-                    break;
-                case "passe":
-                    break;
-            }
-        }
 
         public override Action NextAction(GameIA game)
         {
@@ -99,11 +74,11 @@ namespace DominoIA.Game
             }
             if(game.Pioche.Any())
             {
-                var index = GameIA.rnd.Next(game.Pioche.Count);
+                var index = StaticRandom.Next(game.Pioche.Count);
                 var domino = game.Pioche[index];
                 game.Pioche.RemoveAt(index);
                 main.Add(domino);
-                return new Action { name = "pioche" };
+                return new Action { domino = domino, name = "pioche" };
             }
 
             return new Action { name = "passe" };
@@ -134,15 +109,6 @@ namespace DominoIA.Game
         {
             var result = main.Count(t => t != d && t.Values.Contains(val));
             return result;
-        }
-
-        public override Action StartGame(GameIA game,Domino domino)
-        {
-            var main = game.mains[this.id];
-            game.PlayedDominos.AddRange(domino.Values);
-            main.Remove(domino);
-            return new Action { name = "domino", domino = domino };
-
         }
     }
 }

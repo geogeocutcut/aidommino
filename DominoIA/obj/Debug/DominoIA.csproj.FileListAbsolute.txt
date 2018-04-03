@@ -12,3 +12,10 @@ H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.csproj.CoreCompileInputs.cache
 H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.exe
 H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.pdb
 H:\Perso\DominoIA\DominoIA\obj\Debug\DominoIA.csprojResolveAssemblyReference.cache
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\bin\Debug\DominoIA.exe.config
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\bin\Debug\DominoIA.exe
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\bin\Debug\DominoIA.pdb
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\obj\Debug\DominoIA.csprojResolveAssemblyReference.cache
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\obj\Debug\DominoIA.csproj.CoreCompileInputs.cache
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\obj\Debug\DominoIA.exe
+C:\Users\geffb\Documents\Visual Studio 2017\Projects\IADomino\aidommino\DominoIA\obj\Debug\DominoIA.pdb

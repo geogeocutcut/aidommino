@@ -12,22 +12,26 @@ namespace DominoIA
     class Program
     {
         static int GENETIQUE_ITERATION = 10000;
-        static int MAX_ITERATION = 1000000;
+        static int MAX_ITERATION = 10000000;
         static int NB_PLAYERS = 4;// 4 ou 2
 
         private static void drawTextProgressBar(int progress, int total)
         {
-
+            int x = Console.CursorLeft;
+            int y = Console.CursorTop;
             float onechunk = 50.0f / total;
             if(progress==1)
             {
+                Console.CursorTop = 0;
                 Console.CursorLeft = 0;
                 Console.Write("["); //start
                 Console.CursorLeft = 52;
                 Console.Write("]"); //end
+                Console.SetCursorPosition(x, y);
             }
             if(progress == total || (progress)%(total/50)==0)
             {
+                Console.CursorTop = 0;
                 //draw empty progress bar
                 Console.CursorLeft = 0;
                 Console.Write("["); //start
@@ -61,33 +65,34 @@ namespace DominoIA
                 Console.CursorLeft = 55;
                 Console.BackgroundColor = ConsoleColor.Black;
                 Console.Write(progress.ToString() + " of " + total.ToString() + "    "); //blanks at the end remove any excess
+                Console.SetCursorPosition(x, y);
 
             }
 
         }
-
+        static object syncObj = new object();
         static void Main(string[] args)
         {
+            Console.WriteLine();
             string key="";
             int counter = 0;
             int gameplayed = 0;
-
-            Random rnd = new Random();
+            
             Population population = new Population();
             population.Initialize();
             Stopwatch st = new Stopwatch();
             st.Start();
-            object syncObj = new object();
+            
             while (key!="q")
             {
                 //for(int k=0; k< GENETIQUE_ITERATION; k++)
-                Parallel.For(0, GENETIQUE_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = 2 }, k =>
+                Parallel.For(0, GENETIQUE_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = 3 }, k =>
                 {
                     GameIA game = new GameIA();
                     var players = new Player[NB_PLAYERS];
                     lock (syncObj)
                     {
-                        SelectPlayers(rnd, population, players);
+                        SelectPlayers(population, players);
                     }
 
                     game.Initialize(6, players);
@@ -98,7 +103,7 @@ namespace DominoIA
                         {
                             if (win.name == "looser")
                             {
-                                population.looserScores[Array.IndexOf(population.loosers, win)] += 1;
+                                population.looserScores[Array.IndexOf(population.loosers, win)]+=1;
                             }
                             else
                             {
@@ -138,12 +143,15 @@ namespace DominoIA
 
                 if (counter % GENETIQUE_ITERATION == 0)
                 {
+
+                    Console.WriteLine("total score last game : " + population.scores.Sum());
                     population.Reproduction();
+
                 }
             }
         }
 
-        private static void SelectPlayers(Random rnd, Population population, Player[] players)
+        private static void SelectPlayers( Population population, Player[] players)
         {
 
             var classementPl = population.players.Zip(population.scores.Zip(population.played, (s, p) => p > 0 ? (double)s / (double)p : 0), (p, s) => new { pl = p, sc = s }).OrderByDescending(cp => cp.sc).Select(p => p.pl).ToArray();
@@ -153,12 +161,12 @@ namespace DominoIA
 
                 if (players.Any(p => p != null && p?.name == "looser"))
                 {
-                    var ind = rnd.Next(100);
+                    var ind = StaticRandom.Next(100);
                     var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
                     if (plIa != null)
                     {
                         ind = Array.IndexOf(classementPl, plIa);
-                        ind = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        ind = StaticRandom.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
                     }
                     var pl = classementPl[ind];
 
@@ -169,9 +177,9 @@ namespace DominoIA
                         i++;
                     }
                 }
-                else if ((i == NB_PLAYERS - 1 || rnd.NextDouble() >= 0.5) && i > 1)
+                else if ((i == NB_PLAYERS - 1 || StaticRandom.NextDouble() >= 0.5) && i > 1)
                 {
-                    var ind = rnd.Next(10);
+                    var ind = StaticRandom.Next(10);
                     var pl = population.loosers[ind];
                     if (!players.Any(p => p?.id == pl.id))
                     {
@@ -182,12 +190,12 @@ namespace DominoIA
                 }
                 else
                 {
-                    var ind = rnd.Next(100);
+                    var ind = StaticRandom.Next(100);
                     var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
                     if (plIa != null)
                     {
                         ind = Array.IndexOf(classementPl, plIa);
-                        ind = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        ind = StaticRandom.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
                     }
                     var pl = classementPl[ind];
 
