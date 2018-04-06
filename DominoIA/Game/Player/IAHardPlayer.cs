@@ -225,12 +225,11 @@ namespace DominoIA.Game
             var enemiesPossibleMain = game.playerProbabilites[this]
                 .Select(x => new {
                     pl = x.Key,
-                    nbDominoPossibleMain = x.Value.Where(v => !v.Key.Values.Contains(dval) && !v.Key.Values.Contains(dval2)).Sum(v=>v.Value.proba),
+                    nbDominoBloqueMain = x.Value.Where(v => !v.Key.Values.Contains(dval) && !v.Key.Values.Contains(dval2)).Sum(v=>v.Value.proba),
                     nbDominoTotalMain = x.Value.Sum(v => v.Value.proba) });
-            var nbDominoBloques = enemiesPossibleMain.Sum(p => p.nbDominoPossibleMain);
+            var nbDominoBloques = enemiesPossibleMain.Sum(p => p.nbDominoBloqueMain);
             var nbDominoPossibles = enemiesPossibleMain.Sum(p => p.nbDominoTotalMain);
-            var blocage = coeff_bloq * enemiesPossibleMain.Where(x => x.nbDominoPossibleMain == x.nbDominoTotalMain).Sum(x => (double)1 / (double)game.mains[x.pl.id].Count);
-            
+            var blocage = coeff_bloq * enemiesPossibleMain.Where(x => x.nbDominoBloqueMain >= x.nbDominoTotalMain).Count() ;
             var blocage_incert = coeff_incertitude *nbDominoBloques / nbDominoPossibles;
             return blocage+ blocage_incert;
         }
