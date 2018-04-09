@@ -9,19 +9,25 @@ namespace DominoIA.Game
     public class ClassementItem
     {
         public Player pl;
-        public double score;
+        public double score
+        {
+            get { return played > 0 ? point / played : 0; }
+        }
+        public double point;
         public double played;
+        public int classement;
     }
     public class Population
     {
         Random rnd = new Random();
         public Player[] players = new Player[100];
         public Player[] loosers = new Player[10];
-        public ClassementItem[] classement = new ClassementItem[100];
-        public int[] played = new int[100];
-        public int[] scores = new int[100];
-        public int[] looserScores = new int[10];
-        public int[] looserPlayed = new int[10];
+        public Dictionary<Player, ClassementItem> classement = new Dictionary<Player, ClassementItem>();
+
+        public IEnumerable<ClassementItem>  Classement
+        {
+            get { return classement.OrderByDescending(x => x.Value.score).Select(x => x.Value); }
+        }
 
         public void Initialize()
         {
@@ -46,26 +52,25 @@ namespace DominoIA.Game
                     name = "looser"
                 };
             }
+            InitializeClassement();
         }
-        public void UpdateClassement()
+        
+
+        public void Reproduction()
         {
+            var winners = Classement.Take(10).Select(x=>x.pl);
+            var loosers = Classement.Skip(90).Select(x => x.pl);
 
-            var playedTotal = played.Sum();
-            classement = players.Zip(scores.Zip(played, (s, p) => new { score = p > 0 ? (double)s / (double)(p) : 0, played = p }), (p, s) => new ClassementItem { pl = p, score = s.score, played = s.played }).OrderByDescending(cp => cp.score).ToArray();
+            var iterations = Math.Min(winners.Count(), loosers.Count());   
 
-        }
 
-        public Player Reproduction()
-        {
-            UpdateClassement();
-            int topWinners = 10;
-            
-            for (int i = 0; i < topWinners; i++)
+            for (int i = 0; i < iterations; i++)
             {
-                if(classement.ElementAt(i).pl is IAPlayer)
+                var indloos = loosers.Count() - 1 - i;
+                if (indloos>0 && loosers.ElementAt(indloos) is IAPlayer)
                 {
-                    var winner = (IAPlayer) classement.ElementAt(i).pl;
-                    var player = (IAPlayer) classement.ElementAt(i + (100 - topWinners)).pl;
+                    var winner = (IAPlayer)winners.ElementAt(i);
+                    var player = (IAPlayer)loosers.ElementAt(indloos);
                     var mutabilite = winner.indice_mutuabilite;
                     player.coeff_valeur = mutation(winner.coeff_valeur, mutabilite);
                     player.coeff_double = mutation(winner.coeff_double, mutabilite);
@@ -73,15 +78,20 @@ namespace DominoIA.Game
                     player.coeff_bloq = mutation(winner.coeff_bloq, mutabilite);
                     player.coeff_incertitude = mutation(winner.coeff_incertitude, mutabilite);
                     player.indice_mutuabilite = mutation(winner.indice_mutuabilite, mutabilite);
-                    player.generation += 1;
+                    player.generation = winner.generation + 1;
+                    player.name = winner.name;
                 }
             }
+            InitializeClassement() ;
+        }
 
-            scores = new int[100];
-            played = new int[100];
-            looserScores = new int[10];
-            looserPlayed = new int[10];
-            return classement.First().pl;
+        private void InitializeClassement()
+        {
+            classement = new Dictionary<Player, ClassementItem>();
+            foreach (var p in players)
+            {
+                classement[p] = new ClassementItem { pl = p };
+            }
         }
 
         public double mutation(double coeff, double mutabilite)

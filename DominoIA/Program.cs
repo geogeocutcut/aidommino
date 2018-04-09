@@ -11,11 +11,14 @@ namespace DominoIA
 {
     class Program
     {
-        static int GAME_ITERATION = 50;
-        static int GENETIQUE_ITERATION = 10000;
+        static int MAX_DEGREE_PARALLEL = 2;
+        static int GAME_ITERATION = 100;
+        static int GENETIQUE_ITERATION = 4000;
         static int NB_GAME_TEST = 10000;
         static int MAX_ITERATION = 10000000;
         static int NB_PLAYERS = 2;// 4 ou 3 ou 2
+        static HashSet<string> mathPlayed = new HashSet<string>();
+
 
         private static void drawTextProgressBar(int progress, int total)
         {
@@ -81,87 +84,61 @@ namespace DominoIA
             int gameplayed = 0;
             
             Population population = new Population();
+
             population.Initialize();
             Stopwatch st = new Stopwatch();
             st.Start();
             
             while (key!="q")
             {
-                //for(int k=0; k< GENETIQUE_ITERATION; k++)
-                Parallel.For(0, GENETIQUE_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = 2 }, k =>
+                mathPlayed = new HashSet<string>();
+                for (int k=0; k< GENETIQUE_ITERATION; k++)
+                //Parallel.For(0, GENETIQUE_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = 2 }, k =>
                 {
-                    var players = new Player[NB_PLAYERS];
-                    var nbWin = new int[4];
-                    lock (syncObj)
+                    var players = new ClassementItem[NB_PLAYERS];
+                    var nbWin = new Dictionary<Player, int>();
+                    SelectPlayers(population, players);
+                    foreach (var pl in players)
                     {
-                        SelectPlayers(population, players);
+                        nbWin[pl.pl] = 0;
                     }
-                    for(int gameCounter=0; gameCounter< GAME_ITERATION; gameCounter++)
+                    
+
+                    Parallel.For(0, GAME_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, gameCounter =>
                     {
                         GameIA game = new GameIA();
-                        game.Initialize(6, players);
+                        game.Initialize(6, players.Select(x=>x.pl).ToArray());
                         var winnersGame = game.Run();
                         foreach (var win in winnersGame)
                         {
-
-                            nbWin[Array.IndexOf(players, win)] += 1;
-                            //Console.Write(win.name + " " + win.Main.Count+" ; ");
+                            lock (syncObj)
+                            {
+                                nbWin[win] += 1;
+                            }
                         }
-                    }
+                    });
 
-                    var winners = players.Zip(nbWin, (p, n)=>new { pl = p, nbW = n });
-                    var nbWinMax = winners.Max(x => x.nbW);
-                    foreach (var win in winners.Where(x=>x.nbW==nbWinMax))
+                    var winners = nbWin.GroupBy(x => x.Value).OrderByDescending(x => x.Key).First();
+                    foreach(var win in winners)
                     {
-                        lock (syncObj)
-                        {
-                            if (win.pl.name == "looser")
-                            {
-                                population.looserScores[Array.IndexOf(population.loosers, win.pl)] += 1;
-                            }
-                            else
-                            {
-                                population.scores[Array.IndexOf(population.players, win.pl)] += 1;
-                            }
-                        }
+                        population.classement[win.Key].point += 1;
                     }
+
                 }
-                );
+                //);
                 counter += GENETIQUE_ITERATION;
                 gameplayed += GENETIQUE_ITERATION;
                 drawTextProgressBar(counter, MAX_ITERATION);
-                if(counter%MAX_ITERATION==0)
-                {
-                    var classement = population.players.Zip(population.scores.Zip(population.played, (s, p) => p > 0 ? (double)s / (double)p : 0), (p, s) => new { pl = p, sc = s }).OrderByDescending(cp => cp.sc);
 
-                    var topWinners = classement.Take(10).ToArray();
-                    Console.WriteLine("");
-                    Console.WriteLine("total game : " + gameplayed);
-                    Console.WriteLine("total score last game : " + population.scores.Sum());
-                    int j = 0;
-                    foreach(var w in topWinners)
-                    {
-                        j++;
-                        Console.WriteLine(j+" : " + w.pl.name + " / " + w.sc+" / gen : "+w.pl.generation);
-                    }
-
-                    st.Stop();
-                    Console.WriteLine(st.ElapsedMilliseconds);
-                    Console.WriteLine("Quitter ? (q)");
-
-                    key = Console.ReadKey().KeyChar.ToString();
-                    Console.WriteLine();
-                    counter = 0;
-                }
 
                 if (counter % GENETIQUE_ITERATION == 0)
                 {
 
                     //Console.WriteLine("total score last game : " + population.scores.Sum());
-                    var bestplayer = population.Reproduction();
+                    var bestplayer = population.Classement.First().pl ;
                     var players = new Player[] { bestplayer, new IADummyPlayer() };
                     var nbWin = new int[2];
-                    Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = 2 }, k =>
+                    Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                     {
                         GameIA game = new GameIA();
                         game.Initialize(6, players);
@@ -176,99 +153,64 @@ namespace DominoIA
                         }
                     });
                     Console.WriteLine("Rate Win Best Player : "+ (double)nbWin[0]/(double)NB_GAME_TEST);
+
+                    population.Reproduction();
                 }
+
+                if (counter % MAX_ITERATION == 0)
+                {
+
+
+                    Console.WriteLine(st.ElapsedMilliseconds);
+                    Console.WriteLine("Quitter ? (q)");
+
+                    key = Console.ReadKey().KeyChar.ToString();
+                    Console.WriteLine();
+                    counter = 0;
+                }
+
             }
         }
+        
 
-        private static void SelectPlayers( Population population, Player[] players)
+        private static void SelectPlayers( Population population, ClassementItem[] players)
         {
-            population.UpdateClassement();
-            var classementPl = population.classement;
-            int i = 0;
-            while (players.Any(p => p == null))
+            var classementPl = population.Classement.ToArray();
+
+            var matchPlay = "";
+            while (mathPlayed.Contains(matchPlay) || matchPlay == "")
             {
-
-                if (players.Any(p => p != null && p?.name == "looser"))
+                int i = 0;
+                int ind = 0;
+                matchPlay = "";
+                for (int j=0;j<players.Length; j++)
                 {
-                    var ind = StaticRandom.Next(100);
-                    var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
-                    if (plIa != null)
+                    players[j] = null;
+                }
+                while (players.Any(p => p == null))
+                {
+                    if (!players.Any(p => p != null))
                     {
-                        ind = Array.IndexOf(classementPl, classementPl.First(x=>x.pl==plIa));
-                        ind = StaticRandom.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        ind = StaticRandom.Next(100);
+                        players[i] = classementPl[ind];
+                        i++;
+                        matchPlay = classementPl[ind].pl.id;
                     }
-                    var pl = classementPl[ind].pl;
 
-                    if (!players.Any(p => p?.id == pl.id))
+                    var indOpponent = StaticRandom.Next(Math.Max(0, ind - 10), Math.Min(100, ind + 10));
+                    var pl = classementPl[indOpponent];
+                    if (!players.Any(p => p?.pl.id == pl.pl.id))
                     {
                         players[i] = pl;
-                        population.played[Array.IndexOf(population.players, pl)] += 1;
                         i++;
+                        matchPlay += pl.pl.id;
                     }
                 }
-                else if ((i == NB_PLAYERS - 1 || StaticRandom.NextDouble() >= 0.5) && NB_PLAYERS>2)
-                {
-                    var ind = StaticRandom.Next(10);
-                    var pl = population.loosers[ind];
-                    if (!players.Any(p => p?.id == pl.id))
-                    {
-                        players[i] = pl;
-                        population.looserPlayed[ind] += 1;
-                        i++;
-                    }
-                }
-                else
-                {
-                    var ind = StaticRandom.Next(100);
-                    var plIa = players.FirstOrDefault(p => p != null && p?.name != "looser");
-                    if (plIa != null)
-                    {
-                        ind = Array.IndexOf(classementPl,classementPl.First(x => x.pl == plIa));
-                        ind = StaticRandom.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
-                    }
-                    var pl = classementPl[ind].pl;
-
-                    if (!players.Any(p => p?.id == pl.id))
-                    {
-                        players[i] = pl;
-                        population.played[Array.IndexOf(population.players, pl)] += 1;
-                        i++;
-                    }
-                }
-                //if (players.Any(p => p != null && p?.name != "looser"))
-                //{
-                //    var ind = rnd.Next(10);
-                //    var pl = population.loosers[ind];
-                //    if (!players.Any(p => p?.id == pl.id))
-                //    {
-                //        players[i] = pl;
-                //        population.looserPlayed[ind] += 1;
-                //        i++;
-                //    }
-                //}
-                //else if (i == NB_PLAYERS - 1 || rnd.NextDouble() >= 0.5)
-                //{
-                //    var ind = rnd.Next(100);
-                //    var pl = population.players[ind];
-
-                //    if (!players.Any(p => p?.id == pl.id))
-                //    {
-                //        players[i] = pl;
-                //        population.played[ind] += 1;
-                //        i++;
-                //    }
-                //}
-                //else
-                //{
-                //    var ind = rnd.Next(10);
-                //    var pl = population.loosers[ind];
-                //    if (!players.Any(p => p?.id == pl.id))
-                //    {
-                //        players[i] = pl;
-                //        population.looserPlayed[ind] += 1;
-                //        i++;
-                //    }
-                //}
+            }
+            mathPlayed.Add(matchPlay);
+            foreach(var pl in players)
+            {
+                population.classement[pl.pl].played += 1;
             }
         }
     }
