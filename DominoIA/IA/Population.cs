@@ -11,22 +11,27 @@ namespace DominoIA.Game
         public Player pl;
         public double score
         {
-            get { return played > 0 ? point / played : 0; }
+            get { return played > 0 ? won / played : 0; }
         }
-        public double point;
+        public double won;
         public double played;
         public int classement;
     }
     public class Population
     {
+        static object syncObj= new object();
+        static int MAX_DEGREE_PARALLEL = 2;
+        static int GAME_ITERATION = 100;
+        static int GENETIQUE_ITERATION = 4000;
+        static int NB_PLAYERS = 2;// 4 ou 3 ou 2
+
         Random rnd = new Random();
         public Player[] players = new Player[100];
-        public Player[] loosers = new Player[10];
-        public Dictionary<Player, ClassementItem> classement = new Dictionary<Player, ClassementItem>();
+        public Dictionary<string, ClassementItem> classement = new Dictionary<string, ClassementItem>();
 
         public IEnumerable<ClassementItem>  Classement
         {
-            get { return classement.OrderByDescending(x => x.Value.score).Select(x => x.Value); }
+            get { return classement.OrderBy(x => x.Value.classement).Select(x => x.Value); }
         }
 
         public void Initialize()
@@ -45,13 +50,6 @@ namespace DominoIA.Game
                 };
             }
 
-            for (int i = 0; i < loosers.Count(); i++)
-            {
-                loosers[i] = new IADummyPlayer
-                {
-                    name = "looser"
-                };
-            }
             InitializeClassement();
         }
         
@@ -87,10 +85,12 @@ namespace DominoIA.Game
 
         private void InitializeClassement()
         {
-            classement = new Dictionary<Player, ClassementItem>();
+            classement = new Dictionary<string, ClassementItem>();
+            int i = 0;
             foreach (var p in players)
             {
-                classement[p] = new ClassementItem { pl = p };
+                i++;
+                classement[p.id] = new ClassementItem { pl = p ,classement=i};
             }
         }
 
@@ -98,5 +98,98 @@ namespace DominoIA.Game
         {
             return coeff * (1 + mutabilite * (2 * rnd.NextDouble() - 1));
         }
+
+        public void Evaluate()
+        {
+            Dictionary<string, HashSet<string>> playedMatches = new Dictionary<string, HashSet<string>>();
+            for(int i=0;i< GENETIQUE_ITERATION; i++)
+            {
+                // Selection de celui qui à fait le moins de match
+                var gamePlayers = SelectPlayers(playedMatches);
+
+                // 100 games
+                Dictionary<string, int> nbWin = new Dictionary<string, int>();
+                Parallel.For(0, GAME_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
+                {
+                    GameIA game = new GameIA();
+                    game.Initialize(6, gamePlayers.Select(x=>x.pl).ToArray());
+                    var winnersGame = game.Run();
+                    foreach (var win in winnersGame)
+                    {
+                        lock (syncObj)
+                        {
+                            if(!nbWin.ContainsKey(win.id))
+                            {
+                                nbWin[win.id] =0;
+                            }
+                            nbWin[win.id] += 1;
+                        }
+                    }
+                });
+
+                // Mise à jour du classement
+                var winners = nbWin.GroupBy(x => x.Value).OrderByDescending(x => x.Key).First();
+                var classMin = classement.Where(x => nbWin.ContainsKey(x.Key)).Min(x => x.Value.classement);
+                foreach (var win in winners)
+                {
+                    classement[win.Key].won += 1;
+                    if(classMin != classement[win.Key].classement)
+                    {
+                        classement[win.Key].classement = classMin;
+                        var elmtToMove = Classement.Where(x => x.classement >= classMin && x.classement < classement[win.Key].classement);
+                        foreach(var classt in elmtToMove)
+                        {
+                            classt.classement += 1;
+                        }
+                    }
+                }
+                
+            }
+        }
+
+        private ClassementItem[] SelectPlayers(Dictionary<string, HashSet<string>> playedMatches)
+        {
+            var clsst = Classement.ToArray();
+            var player1Str = "";
+            var player2Str = "";
+            var playersTmp = new ClassementItem[NB_PLAYERS];
+            while (!playedMatches.ContainsKey(player1Str) || (playedMatches.ContainsKey(player1Str)  && playedMatches[player1Str].Contains(player2Str)))
+            {
+                int i = 0;
+                player1Str = "";
+                player2Str = "";
+                playersTmp = new ClassementItem[NB_PLAYERS];
+                while (playersTmp.Any(x => x == null))
+                {
+                    if(!playersTmp.Any(x=>x!=null))
+                    {
+                        var player1 = classement.OrderBy(x => x.Value.played).First().Value;
+                        playersTmp[i] = player1;
+                        player1Str = player1.pl.id;
+                        if (!playedMatches.ContainsKey(player1Str))
+                        {
+                            playedMatches[player1Str] = new HashSet<string>();
+                        }
+                        i++;
+                    }
+                    else
+                    {
+                        var player2 = classement.Where(x => !playedMatches[player1Str].Contains(x.Value.pl.id) && x.Value.pl.id!=player1Str).OrderBy(x => x.Value.played).First().Value;
+                        playersTmp[i] = player2;
+                        player2Str = player2.pl.id;
+                        i++;
+                    }
+                }
+            }
+            playedMatches[player1Str].Add(player2Str);
+
+            for(int i=0;i< playersTmp.Length;i++)
+            {
+                classement[playersTmp[i].pl.id].played += 1;
+            }
+
+            return playersTmp;
+        }
+        
     }
 }
