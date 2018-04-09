@@ -121,21 +121,21 @@ namespace DominoIA.Game
                     action = players.ElementAt(p).Value.NextAction(this);
                     action.player = players.ElementAt(p).Value;
                     actions[p] = action.name;
-                    if (mains[playersTmp[p].id].Count == 0)
-                    {
-                        return new Player[] { playersTmp[p] };
-                    }
-                    if (!actions.Any(a => a != "passe"))
-                    {
-                        var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) })
-                            .GroupBy(v=>v.valeur)
-                            .OrderBy(v=>v.Key);
-                        return result.First().Select(v=>v.pl);
-                    }
                 }
 
                 actionsHistory.Add(action);
-                if(action.name=="pioche")
+                if (mains[playersTmp[p].id].Count == 0)
+                {
+                    return new Player[] { playersTmp[p] };
+                }
+                if (!actions.Any(a => a != "passe"))
+                {
+                    var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) })
+                        .GroupBy(v => v.valeur)
+                        .OrderBy(v => v.Key);
+                    return result.First().Select(v => v.pl);
+                }
+                if (action.name=="pioche")
                 {
                     playersPioche[action.player.id] += 1;
                 }

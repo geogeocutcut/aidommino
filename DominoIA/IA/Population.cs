@@ -6,11 +6,18 @@ using System.Threading.Tasks;
 
 namespace DominoIA.Game
 {
+    public class ClassementItem
+    {
+        public Player pl;
+        public double score;
+        public double played;
+    }
     public class Population
     {
         Random rnd = new Random();
         public Player[] players = new Player[100];
         public Player[] loosers = new Player[10];
+        public ClassementItem[] classement = new ClassementItem[100];
         public int[] played = new int[100];
         public int[] scores = new int[100];
         public int[] looserScores = new int[10];
@@ -20,7 +27,7 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAHardPlayer
+                players[i] = new IAMediumPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,
@@ -40,12 +47,19 @@ namespace DominoIA.Game
                 };
             }
         }
-
-        public void Reproduction()
+        public void UpdateClassement()
         {
-            int topWinners = 10;
-            var classement = players.Zip(scores.Zip(played,(s,p)=>p>0?(double)s/(double)p:0), (p, s) => new { pl = p, sc = s }).OrderByDescending(cp => cp.sc);
 
+            var playedTotal = played.Sum();
+            classement = players.Zip(scores.Zip(played, (s, p) => new { score = p > 0 ? (double)s / (double)(p) : 0, played = p }), (p, s) => new ClassementItem { pl = p, score = s.score, played = s.played }).OrderByDescending(cp => cp.score).ToArray();
+
+        }
+
+        public Player Reproduction()
+        {
+            UpdateClassement();
+            int topWinners = 10;
+            
             for (int i = 0; i < topWinners; i++)
             {
                 if(classement.ElementAt(i).pl is IAPlayer)
@@ -67,6 +81,7 @@ namespace DominoIA.Game
             played = new int[100];
             looserScores = new int[10];
             looserPlayed = new int[10];
+            return classement.First().pl;
         }
 
         public double mutation(double coeff, double mutabilite)
