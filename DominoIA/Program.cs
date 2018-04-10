@@ -54,6 +54,29 @@ namespace DominoIA
                         }
                     });
                     Console.WriteLine("Player win rate (%) : " + (double)nbWin[bestPlayer.id]*100 / (double)NB_GAME_TEST);
+
+
+                    players = new[] { new IADummyPlayer(), bestPlayer };
+                    nbWin = new Dictionary<string, int>();
+                    Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
+                    {
+                        GameIA game = new GameIA();
+                        game.Initialize(6, players);
+                        var winnersGame = game.Run();
+                        foreach (var win in winnersGame)
+                        {
+                            lock (syncObj)
+                            {
+                                if (!nbWin.ContainsKey(win.id))
+                                {
+                                    nbWin[win.id] = 0;
+                                }
+                                nbWin[win.id] += 1;
+                            }
+                        }
+                    });
+                    Console.WriteLine("Player win rate (%) : " + (double)nbWin[bestPlayer.id] * 100 / (double)NB_GAME_TEST);
+                    Console.WriteLine("--------------------------------------------");
                     //st.Stop();
                     //Console.WriteLine(st.ElapsedMilliseconds);
                     drawTextProgressBar(i, MAX_ITERATION);
