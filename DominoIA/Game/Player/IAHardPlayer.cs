@@ -59,6 +59,7 @@ namespace DominoIA.Game
 
         public override void UpdateState(GameIA game,Player enemy, Action action)
         {
+            var coeffPioche = (double) 1/ (double)(game.nbDominoPiocheInitial + 1);
             var dominoMainPossible = game.dominoProbabilites[this];
             var enemyMainPossible = game.playerProbabilites[this];
 
@@ -72,11 +73,25 @@ namespace DominoIA.Game
                 case "domino":
                     foreach (var d in dominoMainPossible[action.domino])
                     {
+                        if(d.Key==enemy)
+                        {
+                            if(d.Value.proba<1)
+                            {
+                                foreach(var d2 in enemyMainPossible[enemy].Where(x=>x.Value.proba<1))
+                                {
+                                    d2.Value.proba -= coeffPioche;
+                                }
+                            }
+                        }
                         d.Value.proba = 0;
                     }
                     UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
                     break;
                 case "pioche":
+                    foreach (var d in possibleDominos)
+                    {
+                        enemyMainPossible[enemy][d].proba = enemyMainPossible[enemy][d].proba<1? enemyMainPossible[enemy][d].proba+ coeffPioche : coeffPioche;
+                    }
                     break;
                 case "passe":
                     foreach (var d in possibleDominos)
@@ -208,7 +223,10 @@ namespace DominoIA.Game
                     var val = d.Values[1 - i];
                     if (possibleVal.Contains(d.Values[i]))
                     {
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(main,d, val) + GetScoreBlocage(game,d, val, possibleVal);
+                        var scoreValue = d.GetValue();
+                        var scoreDivers = GetDiversiteMain(main, d, val);
+                        var scoreBlocage = GetScoreBlocage(game, d, val, possibleVal);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDivers + scoreBlocage;
                     }
                     else
                     {
@@ -225,11 +243,11 @@ namespace DominoIA.Game
             var enemiesPossibleMain = game.playerProbabilites[this]
                 .Select(x => new {
                     pl = x.Key,
-                    nbDominoBloqueMain = x.Value.Where(v => !v.Key.Values.Contains(dval) && !v.Key.Values.Contains(dval2)).Sum(v=>v.Value.proba),
-                    nbDominoTotalMain = x.Value.Sum(v => v.Value.proba) });
+                    nbDominoBloqueMain = x.Value.Where(v => !v.Key.Values.Contains(dval) && !v.Key.Values.Contains(dval2)).Count(v=>v.Value.proba>0),
+                    nbDominoTotalMain = x.Value.Count(v => v.Value.proba>0) });
             var nbDominoBloques = enemiesPossibleMain.Sum(p => p.nbDominoBloqueMain);
             var nbDominoPossibles = enemiesPossibleMain.Sum(p => p.nbDominoTotalMain);
-            var blocage = coeff_bloq * enemiesPossibleMain.Where(x => x.nbDominoBloqueMain >= x.nbDominoTotalMain).Count() ;
+            var blocage = coeff_bloq * enemiesPossibleMain.Where(x => x.nbDominoBloqueMain >= game.mains[x.pl.id].Count).Count() ;
             var blocage_incert = coeff_incertitude *nbDominoBloques / nbDominoPossibles;
             return blocage+ blocage_incert;
         }

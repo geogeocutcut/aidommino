@@ -12,7 +12,7 @@ namespace DominoIA
     class Program
     {
         static int MAX_DEGREE_PARALLEL = 2;
-        static int NB_GAME_TEST = 1000;
+        static int NB_GAME_TEST = 10000;
         static int MAX_ITERATION = 10000000;
         
         static object syncObj = new object();
@@ -25,8 +25,8 @@ namespace DominoIA
             Population population = new Population();
 
             population.Initialize();
-            Stopwatch st = new Stopwatch();
-            st.Start();
+            //Stopwatch st = new Stopwatch();
+            //st.Start();
             
             while (key!="q")
             {
@@ -54,6 +54,8 @@ namespace DominoIA
                         }
                     });
                     Console.WriteLine("Player win rate (%) : " + (double)nbWin[bestPlayer.id]*100 / (double)NB_GAME_TEST);
+                    //st.Stop();
+                    //Console.WriteLine(st.ElapsedMilliseconds);
                     drawTextProgressBar(i, MAX_ITERATION);
                     population.Reproduction();
                 }

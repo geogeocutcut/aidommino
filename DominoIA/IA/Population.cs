@@ -16,14 +16,19 @@ namespace DominoIA.Game
         public double won;
         public double played;
         public int classement;
+
+        public List<Tuple<string,int>> wonGames = new List<Tuple<string, int>>();
+        public List<Tuple<string, int>> lostGames = new List<Tuple<string, int>>();
     }
     public class Population
     {
         static object syncObj= new object();
         static int MAX_DEGREE_PARALLEL = 2;
-        static int GAME_ITERATION = 100;
+        static int GAME_ITERATION = 5;
         static int GENETIQUE_ITERATION = 4000;
         static int NB_PLAYERS = 2;// 4 ou 3 ou 2
+
+        static int CLASSEMENT_MODE = 2;// 1 position classement ou 2 score
 
         Random rnd = new Random();
         public Player[] players = new Player[100];
@@ -31,14 +36,19 @@ namespace DominoIA.Game
 
         public IEnumerable<ClassementItem>  Classement
         {
-            get { return classement.OrderBy(x => x.Value.classement).Select(x => x.Value); }
+            get {
+                if(CLASSEMENT_MODE==1)
+                    return classement.OrderBy(x => x.Value.classement).Select(x => x.Value);
+                else
+                    return classement.OrderByDescending(x => x.Value.score).Select(x => x.Value); 
+            }
         }
 
         public void Initialize()
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAMediumPlayer
+                players[i] = new IAHardPlayer
                 {
                     name = "player " + i,
                     coeff_double = rnd.NextDouble() * 10,
@@ -56,8 +66,9 @@ namespace DominoIA.Game
 
         public void Reproduction()
         {
-            var winners = Classement.Take(10).Select(x=>x.pl);
-            var loosers = Classement.Skip(90).Select(x => x.pl);
+            var clsmt = Classement;
+            var winners = clsmt.Take(10).Select(x=>x.pl);
+            var loosers = clsmt.Skip(90).Select(x => x.pl);
 
             var iterations = Math.Min(winners.Count(), loosers.Count());   
 
@@ -130,20 +141,26 @@ namespace DominoIA.Game
                 // Mise à jour du classement
                 var winners = nbWin.GroupBy(x => x.Value).OrderByDescending(x => x.Key).First();
                 var classMin = classement.Where(x => nbWin.ContainsKey(x.Key)).Min(x => x.Value.classement);
+
+                var wins = winners.Select(x => x.Key);
                 foreach (var win in winners)
                 {
                     classement[win.Key].won += 1;
                     if(classMin != classement[win.Key].classement)
                     {
-                        classement[win.Key].classement = classMin;
                         var elmtToMove = Classement.Where(x => x.classement >= classMin && x.classement < classement[win.Key].classement);
                         foreach(var classt in elmtToMove)
                         {
                             classt.classement += 1;
                         }
+                        classement[win.Key].classement = classMin;
+                    }
+                    foreach(var p in nbWin.Where(x=> !wins.Contains(x.Key)))
+                    {
+                        classement[win.Key].wonGames.Add(new Tuple<string,int>(p.Key, win.Value));
+                        classement[p.Key].lostGames.Add(new Tuple<string, int>(win.Key, p.Value));
                     }
                 }
-                
             }
         }
 
@@ -159,6 +176,7 @@ namespace DominoIA.Game
                 player1Str = "";
                 player2Str = "";
                 playersTmp = new ClassementItem[NB_PLAYERS];
+                int ind = 0;
                 while (playersTmp.Any(x => x == null))
                 {
                     if(!playersTmp.Any(x=>x!=null))
@@ -171,19 +189,31 @@ namespace DominoIA.Game
                             playedMatches[player1Str] = new HashSet<string>();
                         }
                         i++;
+                        ind = Array.IndexOf(clsst, player1);
                     }
                     else
                     {
-                        var player2 = classement.Where(x => !playedMatches[player1Str].Contains(x.Value.pl.id) && x.Value.pl.id!=player1Str).OrderBy(x => x.Value.played).First().Value;
+                        var ind2 = -1;
+                        while (ind2 < 0 || ind2 == ind)
+                        {
+                            ind2 = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                        }
+                        //var player2 = classement.Where(x => !playedMatches[player1Str].Contains(x.Value.pl.id) && x.Value.pl.id!=player1Str).OrderBy(x => Math.Abs(x.Value.score-classement[player1Str].score)).First().Value;
+                        var player2 = clsst[ind2];
                         playersTmp[i] = player2;
                         player2Str = player2.pl.id;
+                        if (!playedMatches.ContainsKey(player2Str))
+                        {
+                            playedMatches[player2Str] = new HashSet<string>();
+                        }
                         i++;
                     }
                 }
             }
-            playedMatches[player1Str].Add(player2Str);
+            //playedMatches[player1Str].Add(player2Str);
+            //playedMatches[player2Str].Add(player1Str);
 
-            for(int i=0;i< playersTmp.Length;i++)
+            for (int i=0;i< playersTmp.Length;i++)
             {
                 classement[playersTmp[i].pl.id].played += 1;
             }

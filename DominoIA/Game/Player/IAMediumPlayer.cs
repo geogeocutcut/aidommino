@@ -94,7 +94,9 @@ namespace DominoIA.Game
                     var val = d.Values[1 - i];
                     if(possibleVal.Contains(d.Values[i]))
                     {
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * d.GetValue() + coeff_div * GetDiversiteMain(main,d, val);
+                        var scoreValue = d.GetValue();
+                        var scoreDiversiter = GetDiversiteMain(main, d, val);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDiversiter;
                     }
                     else
                     {
