@@ -24,7 +24,7 @@ namespace DominoIA.Game
     {
         static object syncObj= new object();
         static int MAX_DEGREE_PARALLEL = 2;
-        static int GAME_ITERATION = 49;
+        static int GAME_ITERATION = 29;
         static int GENETIQUE_ITERATION = 2000;
         static int NB_PLAYERS = 2;// 4 ou 3 ou 2
 
@@ -120,10 +120,9 @@ namespace DominoIA.Game
 
                 // 100 games
                 Dictionary<string, int> nbWin = new Dictionary<string, int>();
-                Parallel.For(0, GAME_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = 1 }, k =>
+                Parallel.For(0, GAME_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                 {
-                    GameIA game = new GameIA();
-                    game.Initialize(6, gamePlayers.Select(x=>x.pl).ToArray());
+                    GameIA game = new GameIA(50,6, gamePlayers.Select(p=>p.pl).ToArray());
                     var winnersGame = game.Run();
                     foreach (var win in winnersGame)
                     {
@@ -198,7 +197,6 @@ namespace DominoIA.Game
                         {
                             ind2 = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
                         }
-                        //var player2 = classement.Where(x => !playedMatches[player1Str].Contains(x.Value.pl.id) && x.Value.pl.id!=player1Str).OrderBy(x => Math.Abs(x.Value.score-classement[player1Str].score)).First().Value;
                         var player2 = clsst[ind2];
                         playersTmp[i] = player2;
                         player2Str = player2.pl.id;

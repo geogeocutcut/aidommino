@@ -8,7 +8,7 @@ namespace DominoIA.Game
 {
     public class IADummyPlayer:IAPlayer
     {
-        public override Action NextAction(GameIA game)
+        public override Action NextAction(GameRunIA game)
         {
             // Evaluation des dominos dans la main
             var leftNum = game.PlayedDominos.First();

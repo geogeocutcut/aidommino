@@ -25,7 +25,7 @@ namespace DominoIA.Game
         }
         
 
-        public override Action NextAction(GameIA game)
+        public override Action NextAction(GameRunIA game)
         {
             var main = game.mains[this.id];
             // Evaluation des dominos dans la main

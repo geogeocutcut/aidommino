@@ -13,7 +13,7 @@ namespace DominoIA.Game
         public string name;
         public int generation;
 
-        public virtual void Initialize(GameIA game)
+        public virtual void Initialize(GameRunIA game)
         {
             var main = game.mains[this.id];
 
@@ -28,21 +28,21 @@ namespace DominoIA.Game
             FinalizeInitialisation(game);
         }
 
-        public virtual void FinalizeInitialisation(GameIA game)
+        public virtual void FinalizeInitialisation(GameRunIA game)
         {
 
         }
 
-        public virtual void UpdateState(GameIA game, Player enemy, Action action)
+        public virtual void UpdateState(GameRunIA game, Player enemy, Action action)
         {
 
         }
         
 
-        public abstract Action NextAction(GameIA game);
+        public abstract Action NextAction(GameRunIA game);
 
 
-        public virtual Action StartGame(GameIA game, Domino domino)
+        public virtual Action StartGame(GameRunIA game, Domino domino)
         {
             var main = game.mains[this.id];
             game.PlayedDominos.AddRange(domino.Values);

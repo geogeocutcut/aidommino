@@ -38,8 +38,7 @@ namespace DominoIA
                     Dictionary<string, int> nbWin = new Dictionary<string, int>();
                     Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                     {
-                        GameIA game = new GameIA();
-                        game.Initialize(6, players);
+                        GameIA game = new GameIA(50, 6, players);
                         var winnersGame = game.Run();
                         foreach (var win in winnersGame)
                         {
@@ -60,8 +59,7 @@ namespace DominoIA
                     nbWin = new Dictionary<string, int>();
                     Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                     {
-                        GameIA game = new GameIA();
-                        game.Initialize(6, players);
+                        GameIA game = new GameIA(50, 6, players);
                         var winnersGame = game.Run();
                         foreach (var win in winnersGame)
                         {

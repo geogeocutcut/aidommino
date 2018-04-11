@@ -21,7 +21,7 @@ namespace DominoIA.Game
             indice_mutuabilite = pl.indice_mutuabilite;
         }
 
-        public override void FinalizeInitialisation(GameIA game)
+        public override void FinalizeInitialisation(GameRunIA game)
         {
             var main = game.mains[this.id];
 
@@ -57,7 +57,7 @@ namespace DominoIA.Game
             }
         }
 
-        public override void UpdateState(GameIA game,Player enemy, Action action)
+        public override void UpdateState(GameRunIA game,Player enemy, Action action)
         {
             var coeffPioche = (double) 1/ (double)(game.nbDominoPiocheInitial + 1);
             var dominoMainPossible = game.dominoProbabilites[this];
@@ -103,7 +103,7 @@ namespace DominoIA.Game
             }
         }
 
-        private void UpdateProbabilite(GameIA game, Dictionary<Domino, Dictionary<Player, DominoProbabilite>> dominoMainPossible, Dictionary<Player, Dictionary<Domino, DominoProbabilite>> enemyMainPossible)
+        private void UpdateProbabilite(GameRunIA game, Dictionary<Domino, Dictionary<Player, DominoProbabilite>> dominoMainPossible, Dictionary<Player, Dictionary<Domino, DominoProbabilite>> enemyMainPossible)
         {
             bool updateProb = true;
             while (updateProb)
@@ -132,7 +132,7 @@ namespace DominoIA.Game
             }
         }
 
-        public override Action NextAction(GameIA game)
+        public override Action NextAction(GameRunIA game)
         {
             var main = game.mains[this.id];
 
@@ -198,7 +198,7 @@ namespace DominoIA.Game
             return action;
         }
 
-        private void UpdateProbabilite(GameIA game,Domino domino)
+        private void UpdateProbabilite(GameRunIA game,Domino domino)
         {
 
             var dominoMainPossible = game.dominoProbabilites[this];
@@ -211,7 +211,7 @@ namespace DominoIA.Game
             UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
         }
 
-        public void CalculScore(GameIA game, IEnumerable<Domino> possibleDominos, int leftNum, int rightNum)
+        public void CalculScore(GameRunIA game, IEnumerable<Domino> possibleDominos, int leftNum, int rightNum)
         {
             var main = game.mains[this.id];
             var possibleVal = new[] { leftNum, rightNum };
@@ -236,7 +236,7 @@ namespace DominoIA.Game
             }
         }
         
-        private double GetScoreBlocage(GameIA game,Domino d, int val, int[] possibleVal)
+        private double GetScoreBlocage(GameRunIA game,Domino d, int val, int[] possibleVal)
         {
             var dval = val;
             var dval2 = possibleVal.Count(dv => dv != dval) > 0 ? possibleVal.First(dv => dv != dval) : val;

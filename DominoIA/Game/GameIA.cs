@@ -35,124 +35,38 @@ namespace DominoIA.Game
 
     public class GameIA
     {
-
+        private int max_value_domino = 6;
+        private int game_endscore = 0;
         
-        public Dictionary<Player,Dictionary<Domino, Dictionary<Player, DominoProbabilite>>> dominoProbabilites = new Dictionary<Player, Dictionary<Domino, Dictionary<Player, DominoProbabilite>>>();
-        public Dictionary<Player, Dictionary<Player, Dictionary<Domino, DominoProbabilite>>> playerProbabilites = new Dictionary<Player, Dictionary<Player, Dictionary<Domino, DominoProbabilite>>>();
-        public Dictionary<Player, Dictionary<Domino, DominoProbabilite>> piocheProbabilites = new Dictionary<Player, Dictionary<Domino, DominoProbabilite>>();
-
         public Dictionary<string, Player> players = new Dictionary<string, Player>();
-        public Dictionary<string, HashSet<Domino>> mains = new Dictionary<string, HashSet<Domino>>();
-
-        public Dictionary<string, int> playersPioche = new Dictionary<string, int>();
-
-        public List<Domino> Pioche = new List<Domino>();
-        public List<Domino> Dominos = new List<Domino>();
-        public List<Action> actionsHistory = new List<Action>();
-
-        public List<int> PlayedDominos = new List<int>();
+        public Dictionary<string, int> scores = new Dictionary<string, int>();
         
-        public int nbDominoMainInitial;
-        public int nbDominoPiocheInitial;
 
-        public GameIA() 
+        public GameIA(int endscore,int max_value, Player[] playersTmp) 
         {
-            
-        }
-
-        public void Initialize(int maxValue, Player[] playersTmp)
-        {
-            Pioche = new List<Domino>();
-            Dominos = new List<Domino>();
-            for (int i = 0; i <= maxValue; i++)
-            {
-                for (int j = i; j <= maxValue; j++)
-                {
-                    var d = new Domino { Values = new int[2] { i, j } };
-                    Pioche.Add(d);
-                    Dominos.Add(d);
-                }
-            }
-            nbDominoMainInitial = playersTmp.Length > 2 ? 6 : 7;
-            nbDominoPiocheInitial = 28%nbDominoMainInitial;
-
+            game_endscore = endscore;
+            max_value_domino = max_value;
             foreach (var pl in playersTmp)
             {
-                players.Add(pl.id,pl);
-                mains[pl.id] = new HashSet<Domino>();
-                playersPioche[pl.id] = 0;
-            }
-
-            foreach(var p in players)
-            {
-                p.Value.Initialize(this);
+                scores[pl.id] = 0;
+                players.Add(pl.id, pl);
             }
         }
-
+        
         public IEnumerable<Player> Run()
         {
-            int i = 0;
-            int index = -1;
-            int p = 0;
-            string[] actions = new string[players.Count];
-            Action action;
-            var playersTmp = players.Values.ToArray();
-            while (true)
+            while(scores.DefaultIfEmpty().Max(x=>x.Value)< game_endscore)
             {
-                if (i == 0)
+                GameRunIA game = new GameRunIA(game_endscore);
+                game.Initialize(6, players.Select(x => x.Value).ToArray());
+                var result = game.Run();
+                foreach(var r in result)
                 {
-                    var firstAction = mains.Where(p1=> p1.Value.Any(d => d.IsDouble())).Select(pl => new { player = players[pl.Key], domino = pl.Value.Where(d => d.IsDouble())
-                        .OrderByDescending(d => d.GetValue())
-                        .FirstOrDefault() })
-                        .OrderByDescending(a => a.domino?.GetValue())
-                        .FirstOrDefault();
-                    if (firstAction == null)
-                    {
-                        firstAction = mains.Select(pl => new { player = players[pl.Key], domino = pl.Value.OrderByDescending(d => d.GetValue()).FirstOrDefault() }).OrderByDescending(a => a.domino.GetValue()).FirstOrDefault();
-                    }
-                    index = Array.IndexOf(playersTmp, firstAction.player);
-                    p = index;
-                    action=firstAction.player.StartGame(this,firstAction.domino);
-                    action.player = firstAction.player;
+                    scores[r.Key] += r.Value;
                 }
-                else
-                {
-                    p = (i + index) % players.Count;
-                    action = players.ElementAt(p).Value.NextAction(this);
-                    action.player = players.ElementAt(p).Value;
-                    actions[p] = action.name;
-                }
-
-                actionsHistory.Add(action);
-                if (mains[playersTmp[p].id].Count == 0)
-                {
-                    return new Player[] { playersTmp[p] };
-                }
-                if (!actions.Any(a => a != "passe"))
-                {
-                    var result = mains.Select(x => new { pl = players[x.Key], valeur = x.Value.Sum(d => d.GetValue()) })
-                        .GroupBy(v => v.valeur)
-                        .OrderBy(v => v.Key);
-                    return result.First().Select(v => v.pl);
-                }
-                if (action.name=="pioche")
-                {
-                    playersPioche[action.player.id] += 1;
-                }
-                if (action.name=="domino")
-                {
-                    Dominos.Remove(action.domino);
-                }
-                for(int p2=0;p2<playersTmp.Length;p2++)
-                {
-                    if (p != p2)
-                    {
-                        playersTmp[p2].UpdateState(this,playersTmp[p], action);
-                    }
-                }
-
-                i++;
             }
+            var winners = scores.GroupBy(x => x.Value).OrderBy(x => x.Key).First().Select(x => x.Key);
+            return players.Where(x => winners.Contains(x.Key)).Select(x => x.Value);
         }
     }
 }
