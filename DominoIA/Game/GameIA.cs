@@ -60,9 +60,21 @@ namespace DominoIA.Game
                 GameRunIA game = new GameRunIA(game_endscore);
                 game.Initialize(6, players.Select(x => x.Value).ToArray());
                 var result = game.Run();
+                var winner = result.Min(x => x.Value);
                 foreach(var r in result)
                 {
                     scores[r.Key] += r.Value;
+                    lock(Population.syncObj)
+                    {
+                        if (r.Value == winner)
+                        {
+                            players[r.Key].wonGames.Add(game);
+                        }
+                        else
+                        {
+                            players[r.Key].lostGames.Add(game);
+                        }
+                    }
                 }
             }
             var winners = scores.GroupBy(x => x.Value).OrderBy(x => x.Key).First().Select(x => x.Key);

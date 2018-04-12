@@ -6,7 +6,6 @@ namespace DominoIA.Game
 {
     public class IAHardPlayer : IAPlayer
     {
-
         public IAHardPlayer()
         {
         }

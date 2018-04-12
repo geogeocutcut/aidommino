@@ -9,6 +9,8 @@ namespace DominoIA.Game
     public abstract class Player
     {
 
+        public List<GameRunIA> wonGames = new List<GameRunIA>();
+        public List<GameRunIA> lostGames = new List<GameRunIA>();
         public string id=Guid.NewGuid().ToString();
         public string name;
         public int generation;

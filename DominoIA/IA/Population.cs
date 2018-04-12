@@ -21,7 +21,7 @@ namespace DominoIA.Game
     }
     public class Population
     {
-        static object syncObj= new object();
+        public static object syncObj= new object();
         static int MAX_DEGREE_PARALLEL = 2;
         static int GAME_ITERATION = 99;
         static int GENETIQUE_ITERATION = 2000;
@@ -32,6 +32,10 @@ namespace DominoIA.Game
         Random rnd = new Random();
         public Player[] players = new Player[100];
         public Dictionary<string, ClassementItem> classement = new Dictionary<string, ClassementItem>();
+
+        
+
+        
 
         public IEnumerable<ClassementItem>  Classement
         {
@@ -124,9 +128,10 @@ namespace DominoIA.Game
                 {
                     GameIA game = new GameIA(50,6, gamePlayers.Select(p=>p.pl).ToArray());
                     var winnersGame = game.Run();
-                    foreach (var win in winnersGame)
+                    var winnerlist = winnersGame.Select(w => w.id);
+                    lock (syncObj)
                     {
-                        lock (syncObj)
+                        foreach (var win in winnersGame)
                         {
                             nbWin[win.id] += 1;
                         }
