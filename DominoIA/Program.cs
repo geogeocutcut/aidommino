@@ -13,7 +13,7 @@ namespace DominoIA
     {
         static int MAX_DEGREE_PARALLEL = 2;
         static int NB_GAME_TEST = 10000;
-        static int MAX_ITERATION = 10000000;
+        static int MAX_ITERATION = 500;
         
         static object syncObj = new object();
 
@@ -34,8 +34,13 @@ namespace DominoIA
                 {
                     population.Evaluate();
                     var bestPlayer = population.Classement.First().pl;
+                    bestPlayer.PrintDescription();
                     var players = new [] { bestPlayer, new IADummyPlayer() };
                     Dictionary<string, int> nbWin = new Dictionary<string, int>();
+                    foreach (var p in players)
+                    {
+                        nbWin[p.id] = 0;
+                    }
                     Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                     {
                         GameIA game = new GameIA(50, 6, players);
@@ -44,37 +49,13 @@ namespace DominoIA
                         {
                             lock (syncObj)
                             {
-                                if (!nbWin.ContainsKey(win.id))
-                                {
-                                    nbWin[win.id] = 0;
-                                }
                                 nbWin[win.id] += 1;
                             }
                         }
                     });
                     Console.WriteLine("Player win rate (%) : " + (double)nbWin[bestPlayer.id]*100 / (double)NB_GAME_TEST);
+                    Console.WriteLine("-----------------------------------------");
 
-
-                    players = new[] { new IADummyPlayer(), bestPlayer };
-                    nbWin = new Dictionary<string, int>();
-                    Parallel.For(0, NB_GAME_TEST, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
-                    {
-                        GameIA game = new GameIA(50, 6, players);
-                        var winnersGame = game.Run();
-                        foreach (var win in winnersGame)
-                        {
-                            lock (syncObj)
-                            {
-                                if (!nbWin.ContainsKey(win.id))
-                                {
-                                    nbWin[win.id] = 0;
-                                }
-                                nbWin[win.id] += 1;
-                            }
-                        }
-                    });
-                    Console.WriteLine("Player win rate (%) : " + (double)nbWin[bestPlayer.id] * 100 / (double)NB_GAME_TEST);
-                    Console.WriteLine("--------------------------------------------");
                     //st.Stop();
                     //Console.WriteLine(st.ElapsedMilliseconds);
                     drawTextProgressBar(i, MAX_ITERATION);

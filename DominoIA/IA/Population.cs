@@ -15,7 +15,6 @@ namespace DominoIA.Game
         }
         public double won;
         public double played;
-        public int classement;
 
         public List<Tuple<string,int>> wonGames = new List<Tuple<string, int>>();
         public List<Tuple<string, int>> lostGames = new List<Tuple<string, int>>();
@@ -24,7 +23,7 @@ namespace DominoIA.Game
     {
         static object syncObj= new object();
         static int MAX_DEGREE_PARALLEL = 2;
-        static int GAME_ITERATION = 29;
+        static int GAME_ITERATION = 99;
         static int GENETIQUE_ITERATION = 2000;
         static int NB_PLAYERS = 2;// 4 ou 3 ou 2
 
@@ -37,10 +36,7 @@ namespace DominoIA.Game
         public IEnumerable<ClassementItem>  Classement
         {
             get {
-                if(CLASSEMENT_MODE==1)
-                    return classement.OrderBy(x => x.Value.classement).Select(x => x.Value);
-                else
-                    return classement.OrderByDescending(x => x.Value.score).Select(x => x.Value); 
+                return classement.OrderByDescending(x => x.Value.score).Select(x => x.Value); 
             }
         }
 
@@ -101,7 +97,7 @@ namespace DominoIA.Game
             foreach (var p in players)
             {
                 i++;
-                classement[p.id] = new ClassementItem { pl = p ,classement=i};
+                classement[p.id] = new ClassementItem { pl = p};
             }
         }
 
@@ -120,6 +116,10 @@ namespace DominoIA.Game
 
                 // 100 games
                 Dictionary<string, int> nbWin = new Dictionary<string, int>();
+                foreach (var p in gamePlayers)
+                {
+                    nbWin[p.pl.id] = 0;
+                }
                 Parallel.For(0, GAME_ITERATION, new ParallelOptions { MaxDegreeOfParallelism = MAX_DEGREE_PARALLEL }, k =>
                 {
                     GameIA game = new GameIA(50,6, gamePlayers.Select(p=>p.pl).ToArray());
@@ -128,10 +128,6 @@ namespace DominoIA.Game
                     {
                         lock (syncObj)
                         {
-                            if(!nbWin.ContainsKey(win.id))
-                            {
-                                nbWin[win.id] =0;
-                            }
                             nbWin[win.id] += 1;
                         }
                     }
@@ -139,21 +135,11 @@ namespace DominoIA.Game
 
                 // Mise à jour du classement
                 var winners = nbWin.GroupBy(x => x.Value).OrderByDescending(x => x.Key).First();
-                var classMin = classement.Where(x => nbWin.ContainsKey(x.Key)).Min(x => x.Value.classement);
-
+                
                 var wins = winners.Select(x => x.Key);
                 foreach (var win in winners)
                 {
                     classement[win.Key].won += 1;
-                    if(classMin != classement[win.Key].classement)
-                    {
-                        var elmtToMove = Classement.Where(x => x.classement >= classMin && x.classement < classement[win.Key].classement);
-                        foreach(var classt in elmtToMove)
-                        {
-                            classt.classement += 1;
-                        }
-                        classement[win.Key].classement = classMin;
-                    }
                     foreach(var p in nbWin.Where(x=> !wins.Contains(x.Key)))
                     {
                         classement[win.Key].wonGames.Add(new Tuple<string,int>(p.Key, win.Value));
@@ -166,54 +152,34 @@ namespace DominoIA.Game
         private ClassementItem[] SelectPlayers(Dictionary<string, HashSet<string>> playedMatches)
         {
             var clsst = Classement.ToArray();
-            var player1Str = "";
-            var player2Str = "";
             var playersTmp = new ClassementItem[NB_PLAYERS];
-            while (!playedMatches.ContainsKey(player1Str) || (playedMatches.ContainsKey(player1Str)  && playedMatches[player1Str].Contains(player2Str)))
+            int i = 0;
+            int ind = 0;
+            while (playersTmp.Any(x => x == null))
             {
-                int i = 0;
-                player1Str = "";
-                player2Str = "";
-                playersTmp = new ClassementItem[NB_PLAYERS];
-                int ind = 0;
-                while (playersTmp.Any(x => x == null))
+                if(!playersTmp.Any(x=>x!=null))
                 {
-                    if(!playersTmp.Any(x=>x!=null))
+                    var player1 = classement.OrderBy(x => x.Value.played).First().Value;
+                    playersTmp[i] = player1;
+                    i++;
+                    ind = Array.IndexOf(clsst, player1);
+                }
+                else
+                {
+                    var ind2 = StaticRandom.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
+                    var player2 = clsst[ind2];
+                    //var player2 = clsst.OrderBy(p=>p.score- clsst[ind].score)
+                    if (!playersTmp.Any(x => x?.pl?.id== player2.pl.id))
                     {
-                        var player1 = classement.OrderBy(x => x.Value.played).First().Value;
-                        playersTmp[i] = player1;
-                        player1Str = player1.pl.id;
-                        if (!playedMatches.ContainsKey(player1Str))
-                        {
-                            playedMatches[player1Str] = new HashSet<string>();
-                        }
-                        i++;
-                        ind = Array.IndexOf(clsst, player1);
-                    }
-                    else
-                    {
-                        var ind2 = -1;
-                        while (ind2 < 0 || ind2 == ind)
-                        {
-                            ind2 = rnd.Next(Math.Max(0, ind - 5), Math.Min(100, ind + 5));
-                        }
-                        var player2 = clsst[ind2];
                         playersTmp[i] = player2;
-                        player2Str = player2.pl.id;
-                        if (!playedMatches.ContainsKey(player2Str))
-                        {
-                            playedMatches[player2Str] = new HashSet<string>();
-                        }
                         i++;
                     }
                 }
             }
-            //playedMatches[player1Str].Add(player2Str);
-            //playedMatches[player2Str].Add(player1Str);
 
-            for (int i=0;i< playersTmp.Length;i++)
+            for (int j=0;j< playersTmp.Length;j++)
             {
-                classement[playersTmp[i].pl.id].played += 1;
+                classement[playersTmp[j].pl.id].played += 1;
             }
 
             return playersTmp;

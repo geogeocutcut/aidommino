@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace DominoIA.Game
@@ -62,6 +63,7 @@ namespace DominoIA.Game
             var coeffPioche = (double) 1/ (double)(game.nbDominoPiocheInitial + 1);
             var dominoMainPossible = game.dominoProbabilites[this];
             var enemyMainPossible = game.playerProbabilites[this];
+            var piochePossible = game.piocheProbabilites[this];
 
             var main = game.mains[this.id];
             var possibleNum = new[] { game.PlayedDominos.First(), game.PlayedDominos.Last() };
@@ -85,12 +87,20 @@ namespace DominoIA.Game
                         }
                         d.Value.proba = 0;
                     }
-                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+                    piochePossible[action.domino].proba = 0;
+                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible, piochePossible);
                     break;
                 case "pioche":
                     foreach (var d in possibleDominos)
                     {
                         enemyMainPossible[enemy][d].proba = enemyMainPossible[enemy][d].proba<1? enemyMainPossible[enemy][d].proba+ coeffPioche : coeffPioche;
+                    }
+                    foreach (var d in piochePossible.Where(x=>x.Value.proba>0))
+                    {
+                        if(enemyMainPossible[enemy][d.Key].proba<1)
+                        {
+                            enemyMainPossible[enemy][d.Key].proba += coeffPioche;
+                        }
                     }
                     break;
                 case "passe":
@@ -98,12 +108,12 @@ namespace DominoIA.Game
                     {
                         enemyMainPossible[enemy][d].proba = 0;
                     }
-                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+                    UpdateProbabilite(game, dominoMainPossible, enemyMainPossible, piochePossible);
                     break;
             }
         }
 
-        private void UpdateProbabilite(GameRunIA game, Dictionary<Domino, Dictionary<Player, DominoProbabilite>> dominoMainPossible, Dictionary<Player, Dictionary<Domino, DominoProbabilite>> enemyMainPossible)
+        private void UpdateProbabilite(GameRunIA game, Dictionary<Domino, Dictionary<Player, DominoProbabilite>> dominoMainPossible, Dictionary<Player, Dictionary<Domino, DominoProbabilite>> enemyMainPossible, Dictionary<Domino, DominoProbabilite> piochePossible)
         {
             bool updateProb = true;
             while (updateProb)
@@ -124,6 +134,28 @@ namespace DominoIA.Game
                                         prob2.Value.proba = 0;
                                         updateProb = true;
                                     }
+                                }
+                                if (piochePossible[prob.Key].proba > 0)
+                                {
+                                    piochePossible[prob.Key].proba = 0;
+                                    updateProb = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                if (piochePossible.Sum(p2 => p2.Value.proba) <= game.Pioche.Count)
+                {
+                    foreach (var prob in piochePossible)
+                    {
+                        if (prob.Value.proba > 0)
+                        {
+                            foreach (var prob2 in dominoMainPossible[prob.Key])
+                            {
+                                if (prob2.Value.proba > 0)
+                                {
+                                    prob2.Value.proba = 0;
+                                    updateProb = true;
                                 }
                             }
                         }
@@ -200,15 +232,15 @@ namespace DominoIA.Game
 
         private void UpdateProbabilite(GameRunIA game,Domino domino)
         {
-
             var dominoMainPossible = game.dominoProbabilites[this];
             var enemyMainPossible = game.playerProbabilites[this];
+            var piochePossible = game.piocheProbabilites[this];
             foreach (var p in dominoMainPossible[domino].Values)
             {
                 p.proba = 0;
             }
-
-            UpdateProbabilite(game, dominoMainPossible, enemyMainPossible);
+            piochePossible[domino].proba = 0;
+            UpdateProbabilite(game, dominoMainPossible, enemyMainPossible, piochePossible);
         }
 
         public void CalculScore(GameRunIA game, IEnumerable<Domino> possibleDominos, int leftNum, int rightNum)
@@ -256,6 +288,17 @@ namespace DominoIA.Game
         {
             var result = main.Count(t => t != d && t.Values.Contains(val));
             return result;
+        }
+
+        public override void PrintDescription()
+        {
+            Console.WriteLine("Player hard : " + this.name + " / " + this.id);
+            Console.WriteLine("    generation : " + this.generation);
+            Console.WriteLine("    coeff double : " + this.coeff_double);
+            Console.WriteLine("    coeff diversité : " + this.coeff_div);
+            Console.WriteLine("    coeff valeur : " + this.coeff_valeur);
+            Console.WriteLine("    coeff bloquage : " + this.coeff_bloq);
+            Console.WriteLine("    coeff incertitude : " + this.coeff_incertitude);
         }
     }
 }

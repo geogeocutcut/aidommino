@@ -50,5 +50,10 @@ namespace DominoIA.Game
             return new Action { name = "domino", domino = domino };
 
         }
+
+        public virtual void PrintDescription()
+        {
+            Console.WriteLine("Player basic : " + this.name + " / " + this.id);
+        }
     }
 }

@@ -69,5 +69,10 @@ namespace DominoIA.Game
 
             return new Action { name = "passe" };
         }
+
+        public override void PrintDescription()
+        {
+            Console.WriteLine("Player dummy : " + this.name + " / " + this.id);
+        }
     }
 }

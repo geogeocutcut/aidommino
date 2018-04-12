@@ -105,7 +105,14 @@ namespace DominoIA.Game
                 }
             }
         }
-        
+        public override void PrintDescription()
+        {
+            Console.WriteLine("Player medium : " + this.name + " / " + this.id);
+            Console.WriteLine("    generation : " + this.generation);
+            Console.WriteLine("    coeff double : " + this.coeff_double);
+            Console.WriteLine("    coeff diversité : " + this.coeff_div);
+            Console.WriteLine("    coeff valeur : " + this.coeff_valeur);
+        }
 
         public double GetDiversiteMain(IEnumerable<Domino> main,Domino d, int val)
         {
