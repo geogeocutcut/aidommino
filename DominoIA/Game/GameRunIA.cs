@@ -48,8 +48,9 @@ namespace DominoIA.Game
                     Dominos.Add(d);
                 }
             }
+            Pioche = Pioche.OrderBy(x => StaticRandom.NextDouble()).ToList();
             nbDominoMainInitial = playersTmp.Length > 2 ? 6 : 7;
-            nbDominoPiocheInitial = 28%nbDominoMainInitial;
+            nbDominoPiocheInitial = 28- playersTmp.Length*nbDominoMainInitial;
 
             foreach (var pl in playersTmp)
             {

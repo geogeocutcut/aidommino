@@ -23,7 +23,7 @@ namespace DominoIA.Game
     {
         public static object syncObj= new object();
         static int MAX_DEGREE_PARALLEL = 2;
-        static int GAME_ITERATION = 99;
+        static int GAME_ITERATION = 49;
         static int GENETIQUE_ITERATION = 2000;
         static int NB_PLAYERS = 2;// 4 ou 3 ou 2
 
@@ -48,14 +48,15 @@ namespace DominoIA.Game
         {
             for(int i=0; i<players.Count();i++)
             {
-                players[i] = new IAHardPlayer
+                players[i] = new IAMediumPlayer
                 {
                     name = "player " + i,
-                    coeff_double = rnd.NextDouble() * 10,
-                    coeff_valeur = rnd.NextDouble() * 10,
-                    coeff_div = rnd.NextDouble() * 10,
-                    coeff_bloq = rnd.NextDouble() * 10,
-                    coeff_incertitude = rnd.NextDouble() * 10,
+                    coeff_double = rnd.NextDouble() * 50,
+                    coeff_valeur = rnd.NextDouble() * 50,
+                    coeff_div = rnd.NextDouble() * 50,
+                    coeff_bloq = rnd.NextDouble() * 50,
+                    coeff_incertitude = rnd.NextDouble() * 50,
+                    coeff_played = rnd.NextDouble() * 50,
                     indice_mutuabilite = (rnd.NextDouble() - 0.5)
                 };
             }

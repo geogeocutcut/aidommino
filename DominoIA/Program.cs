@@ -12,7 +12,7 @@ namespace DominoIA
     class Program
     {
         static int MAX_DEGREE_PARALLEL = 2;
-        static int NB_GAME_TEST = 10000;
+        static int NB_GAME_TEST = 1000;
         static int MAX_ITERATION = 500;
         
         static object syncObj = new object();

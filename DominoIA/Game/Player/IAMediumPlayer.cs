@@ -21,6 +21,7 @@ namespace DominoIA.Game
             coeff_valeur = pl.coeff_valeur;
             coeff_bloq = pl.coeff_bloq;
             coeff_incertitude = pl.coeff_incertitude;
+            coeff_played = pl.coeff_played;
             indice_mutuabilite = pl.indice_mutuabilite;
         }
         
@@ -38,7 +39,7 @@ namespace DominoIA.Game
             if (possibleDominos.Any())
             {
                 // scoring IA
-                CalculScore(main,possibleDominos, leftNum,rightNum);
+                CalculScore(main,possibleDominos, leftNum,rightNum,game);
                 playDomino = possibleDominos.OrderByDescending(d => d.scores.Max()).First();
 
                 main.Remove(playDomino);
@@ -83,7 +84,7 @@ namespace DominoIA.Game
 
             return new Action { name = "passe" };
         }
-        public void CalculScore(IEnumerable<Domino> main,IEnumerable<Domino> possibleDominos,int leftNum,int rightNum)
+        public void CalculScore(IEnumerable<Domino> main,IEnumerable<Domino> possibleDominos,int leftNum,int rightNum,GameRunIA game)
         {
             var possibleVal = new[] { leftNum, rightNum };
             foreach(Domino d in possibleDominos)
@@ -96,7 +97,8 @@ namespace DominoIA.Game
                     {
                         var scoreValue = d.GetValue();
                         var scoreDiversiter = GetDiversiteMain(main, d, val);
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDiversiter;
+                        var scorePlayed = game.PlayedDominos.Count(x => x == val);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDiversiter+coeff_played*scorePlayed;
                     }
                     else
                     {
@@ -112,6 +114,7 @@ namespace DominoIA.Game
             Console.WriteLine("    coeff double : " + this.coeff_double);
             Console.WriteLine("    coeff diversité : " + this.coeff_div);
             Console.WriteLine("    coeff valeur : " + this.coeff_valeur);
+            Console.WriteLine("    coeff déjà joué : " + this.coeff_played);
         }
 
         public double GetDiversiteMain(IEnumerable<Domino> main,Domino d, int val)

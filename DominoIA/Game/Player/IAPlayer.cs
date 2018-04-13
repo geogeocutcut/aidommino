@@ -13,6 +13,7 @@ namespace DominoIA.Game
         public double coeff_valeur { get; set; }
         public double coeff_bloq { get; set; }
         public double coeff_incertitude { get; set; }
+        public double coeff_played { get; set; }
         public double indice_mutuabilite { get; set; }
 
         

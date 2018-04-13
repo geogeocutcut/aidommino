@@ -18,6 +18,7 @@ namespace DominoIA.Game
             coeff_valeur = pl.coeff_valeur;
             coeff_bloq = pl.coeff_bloq;
             coeff_incertitude = pl.coeff_incertitude;
+            coeff_played = pl.coeff_played;
             indice_mutuabilite = pl.indice_mutuabilite;
         }
 
@@ -257,7 +258,8 @@ namespace DominoIA.Game
                         var scoreValue = d.GetValue();
                         var scoreDivers = GetDiversiteMain(main, d, val);
                         var scoreBlocage = GetScoreBlocage(game, d, val, possibleVal);
-                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDivers + scoreBlocage;
+                        var scorePlayed = game.PlayedDominos.Count(x => x == val);
+                        d.scores[i] = coeff_double * scoreDouble + coeff_valeur * scoreValue + coeff_div * scoreDivers + scoreBlocage + coeff_played*scorePlayed;
                     }
                     else
                     {
@@ -298,6 +300,7 @@ namespace DominoIA.Game
             Console.WriteLine("    coeff valeur : " + this.coeff_valeur);
             Console.WriteLine("    coeff bloquage : " + this.coeff_bloq);
             Console.WriteLine("    coeff incertitude : " + this.coeff_incertitude);
+            Console.WriteLine("    coeff déjà joué : " + this.coeff_played);
         }
     }
 }
